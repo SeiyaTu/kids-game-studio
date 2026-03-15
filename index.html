@@ -39,7 +39,7 @@ canvas { display: block; }
   <h1>✈️ 飞机射击大作战</h1>
   <p>消灭敌机，获取高分！</p>
   <p style="font-size:13px;color:#666;margin-bottom:10px;">触屏拖动 / 鼠标移动控制飞机 · 自动射击</p>
-  <p style="font-size:13px;color:#888;margin-bottom:20px;">💊 吃道具变强 · 小心敌人子弹！</p>
+  <p style="font-size:13px;color:#888;margin-bottom:20px;">💊 吃道具变强 · 🚀 导弹自动追踪敌人！</p>
   <button class="btn" onclick="startGame()">开始游戏 🚀</button>
 </div>
 
@@ -82,6 +82,8 @@ class Player {
     this.bulletLevel = 1; // 1=single, 2=double, 3=triple+spread
     this.shield = 0; this.speedBoost = 0;
     this.invincible = 0;
+    this.missileTimer = 0; this.missileInterval = 90; // fires a missile every ~1.5s
+    this.hasMissile = false; this.missileLevel = 0; // 0=none,1=single,2=double
   }
   draw() {
     const x = this.x, y = this.y;
@@ -123,6 +125,17 @@ class Player {
       bullets.push({x:bx-8, y:by, vx:-2, vy:-11, w:3, h:10, isPlayer:true});
       bullets.push({x:bx+8, y:by, vx:2, vy:-11, w:3, h:10, isPlayer:true});
     }
+  }
+  launchMissile(missiles) {
+    if (!this.hasMissile) return;
+    this.missileTimer++;
+    const interval = this.missileLevel >= 2 ? 60 : this.missileInterval;
+    if (this.missileTimer >= interval) {
+      this.missileTimer = 0;
+      missiles.push(new Missile(this.x, this.y - this.h/2, -10));
+      if (this.missileLevel >= 2) missiles.push(new Missile(this.x, this.y - this.h/2, 10));
+    }
+  }
   }
 }
 
@@ -312,22 +325,23 @@ class Enemy {
 }
 
 // ============ POWERUPS ============
-// type: 0=双发, 1=三发, 2=护盾, 3=生命, 4=射速
+// type: 0=双发, 1=三发, 2=护盾, 3=生命, 4=射速, 5=导弹
 class PowerUp {
   constructor(x, y) {
     const r = Math.random();
-    if (r < 0.3) this.type = 0;
-    else if (r < 0.5) this.type = 1;
-    else if (r < 0.7) this.type = 2;
-    else if (r < 0.85) this.type = 3;
-    else this.type = 4;
+    if (r < 0.25) this.type = 0;
+    else if (r < 0.4) this.type = 1;
+    else if (r < 0.55) this.type = 2;
+    else if (r < 0.7) this.type = 3;
+    else if (r < 0.82) this.type = 4;
+    else this.type = 5;
 
     this.x = x; this.y = y;
     this.w = 22; this.h = 22;
     this.speed = 2;
     this.age = 0;
-    this.labels = ['🔫双发','🔥三发','🛡️护盾','❤️生命','⚡射速'];
-    this.colors = ['#ff0','#f80','#0ff','#f4a','#0f0'];
+    this.labels = ['🔫双发','🔥三发','🛡️护盾','❤️生命','⚡射速','🚀导弹'];
+    this.colors = ['#ff0','#f80','#0ff','#f4a','#0f0','#f60'];
   }
   update() { this.y += this.speed; this.age++; }
   draw() {
@@ -341,7 +355,7 @@ class PowerUp {
     ctx.fillRect(this.x-s/2, this.y-s/2, s, s);
     // Icon
     ctx.fillStyle = '#000'; ctx.font = `${Math.floor(s*0.7)}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const icons = ['W','T','S','♥','⚡'];
+    const icons = ['W','T','S','♥','⚡','M'];
     ctx.fillText(icons[this.type], this.x, this.y);
   }
   apply(player) {
@@ -351,8 +365,78 @@ class PowerUp {
       case 2: player.shield = 300; break; // 5 seconds
       case 3: return 'life';
       case 4: player.speedBoost = 360; break; // 6 seconds
+      case 5: player.hasMissile = true; player.missileLevel = Math.min(player.missileLevel+1, 2); break;
     }
     return this.labels[this.type];
+  }
+}
+
+// ============ MISSILE (追踪导弹) ============
+class Missile {
+  constructor(x, y, offsetX = 0) {
+    this.x = x + offsetX; this.y = y;
+    this.w = 6; this.h = 16;
+    this.speed = 5; this.maxSpeed = 10;
+    this.vx = offsetX * 0.3; this.vy = -4;
+    this.turnRate = 0.12;
+    this.life = 180; // 3 seconds
+    this.damage = 3;
+    this.trail = [];
+  }
+  findTarget(enemies) {
+    let closest = null, minDist = Infinity;
+    for (const e of enemies) {
+      const dx = e.x - this.x, dy = e.y - this.y;
+      const dist = dx*dx + dy*dy;
+      if (dist < minDist) { minDist = dist; closest = e; }
+    }
+    return closest;
+  }
+  update(enemies) {
+    this.life--;
+    this.trail.push({x: this.x, y: this.y, life: 15});
+    this.trail = this.trail.filter(t => { t.life--; return t.life > 0; });
+
+    const target = this.findTarget(enemies);
+    if (target) {
+      const dx = target.x - this.x, dy = target.y - this.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const tx = dx/dist, ty = dy/dist;
+      this.vx += (tx * this.maxSpeed - this.vx) * this.turnRate;
+      this.vy += (ty * this.maxSpeed - this.vy) * this.turnRate;
+    }
+    const spd = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+    if (spd > this.maxSpeed) { this.vx = this.vx/spd*this.maxSpeed; this.vy = this.vy/spd*this.maxSpeed; }
+    if (spd < this.speed) { this.vx = this.vx/spd*this.speed; this.vy = this.vy/spd*this.speed; }
+    this.x += this.vx; this.y += this.vy;
+  }
+  draw() {
+    // Trail
+    this.trail.forEach(t => {
+      ctx.globalAlpha = t.life / 15 * 0.6;
+      ctx.fillStyle = '#f80';
+      ctx.fillRect(t.x-2, t.y-2, 4, 4);
+    });
+    ctx.globalAlpha = 1;
+    // Missile body
+    const angle = Math.atan2(this.vy, this.vx);
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(angle + Math.PI/2);
+    // Body
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(-3, -8, 6, 16);
+    // Nose
+    ctx.fillStyle = '#f44';
+    ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(-3, -8); ctx.lineTo(3, -8); ctx.closePath(); ctx.fill();
+    // Fins
+    ctx.fillStyle = '#888';
+    ctx.beginPath(); ctx.moveTo(-3, 6); ctx.lineTo(-7, 10); ctx.lineTo(-3, 8); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(3, 6); ctx.lineTo(7, 10); ctx.lineTo(3, 8); ctx.closePath(); ctx.fill();
+    // Flame
+    ctx.fillStyle = `rgba(255,${100+Math.random()*100},0,${0.6+Math.random()*0.4})`;
+    ctx.beginPath(); ctx.moveTo(-2, 8); ctx.lineTo(2, 8); ctx.lineTo(0, 14+Math.random()*6); ctx.closePath(); ctx.fill();
+    ctx.restore();
   }
 }
 
@@ -377,7 +461,7 @@ class Explosion {
 function initGame() {
   return {
     player: new Player(), bullets: [], enemyBullets: [], enemies: [], explosions: [],
-    powerups: [], stars: Array.from({length:80}, ()=>new Star()),
+    missiles: [], powerups: [], stars: Array.from({length:80}, ()=>new Star()),
     score: 0, lives: 3, frame: 0,
     spawnTimer: 0, spawnInterval: 55,
     difficulty: 1, running: true,
@@ -432,6 +516,7 @@ function loop() {
   g.player.y = Math.max(25, Math.min(canvas.height-25, g.player.y));
 
   g.player.shoot(g.bullets);
+  g.player.launchMissile(g.missiles);
 
   // Player bullets
   g.bullets = g.bullets.filter(b => { b.x+=b.vx; b.y+=b.vy; return b.y>-20 && b.x>-20 && b.x<canvas.width+20; });
@@ -449,6 +534,27 @@ function loop() {
 
   // Update enemies
   g.enemies.forEach(e => e.update(g.enemyBullets, g.player.x));
+
+  // Update missiles & missile-enemy collision
+  g.missiles = g.missiles.filter(m => {
+    m.update(g.enemies);
+    if (m.life <= 0 || m.x < -50 || m.x > canvas.width+50 || m.y < -50 || m.y > canvas.height+50) return false;
+    for (let i = g.enemies.length-1; i >= 0; i--) {
+      const e = g.enemies[i];
+      if (Math.abs(m.x-e.x) < (e.w+m.w)/2 && Math.abs(m.y-e.y) < (e.h+m.h)/2) {
+        e.hp -= m.damage;
+        g.explosions.push(new Explosion(m.x, m.y, '#f80', true));
+        if (e.hp <= 0) {
+          g.score += e.score;
+          g.explosions.push(new Explosion(e.x, e.y, '#f80', true));
+          if (Math.random() < 0.2) g.powerups.push(new PowerUp(e.x, e.y));
+          g.enemies.splice(i, 1);
+        }
+        return false;
+      }
+    }
+    return true;
+  });
 
   // Bullet-enemy collision
   g.bullets = g.bullets.filter(b => {
@@ -528,8 +634,9 @@ function loop() {
   g.bullets.forEach(b => ctx.fillRect(b.x-b.w/2, b.y-b.h/2, b.w, b.h));
   ctx.shadowBlur = 0;
 
-  // Draw enemies, powerups, player, explosions
+  // Draw enemies, powerups, player, missiles, explosions
   g.enemies.forEach(e => e.draw());
+  g.missiles.forEach(m => m.draw());
   g.powerups.forEach(p => p.draw());
   g.player.draw();
   g.explosions.forEach(e => { e.update(); e.draw(); });
@@ -553,6 +660,7 @@ function loop() {
   if (g.player.bulletLevel >= 3) parts.push('🔥');
   if (g.player.shield > 0) parts.push('🛡️');
   if (g.player.speedBoost > 0) parts.push('⚡');
+  if (g.player.hasMissile) parts.push('🚀');
   pd.textContent = parts.join('');
 
   requestAnimationFrame(loop);
