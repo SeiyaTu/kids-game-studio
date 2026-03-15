@@ -103,16 +103,16 @@ function getLevelConfig(level) {
   const L = Math.min(level, 10);
   return {
     level: L,
-    enemyHpMult: 0.8 + L * 0.3,         // enemies get tougher
-    enemySpeedMult: 0.85 + L * 0.15,     // enemies get faster
-    spawnInterval: Math.max(12, 55 - L * 4), // spawn faster
-    extraSpawnChance: Math.min(0.6, L * 0.07),
-    enemyShootMult: 1 + L * 0.15,        // shoot faster
-    enemyBulletSpeed: 3.5 + L * 0.4,
-    killsToWin: 15 + L * 8,              // need more kills per level
-    tankMinLevel: 4,                       // tanks appear from level 4
-    heliMinLevel: 2,                       // helicopters from level 2
-    bigPlaneMinLevel: 2,                   // big planes from level 2
+    enemyHpMult: 0.6 + L * 0.2,              // slower HP scaling
+    enemySpeedMult: 0.5 + L * 0.12,           // much slower at early levels
+    spawnInterval: Math.max(15, 80 - L * 6),   // slower spawns early (was 55)
+    extraSpawnChance: Math.min(0.5, Math.max(0, (L - 3) * 0.08)), // no extra spawns before level 4
+    enemyShootMult: 0.7 + L * 0.12,           // slower shooting early
+    enemyBulletSpeed: 2.5 + L * 0.4,          // slower bullets early
+    killsToWin: 10 + L * 5,                   // fewer kills needed (was 15+L*8)
+    tankMinLevel: 5,                            // tanks from level 5 (was 4)
+    heliMinLevel: 3,                            // helicopters from level 3 (was 2)
+    bigPlaneMinLevel: 3,                        // big planes from level 3 (was 2)
     bgColor: `hsl(${220 + L * 8}, 30%, ${Math.max(2, 8 - L)}%)`,
   };
 }
