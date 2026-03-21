@@ -811,8 +811,8 @@ class Player {
     this.shootTimer = 0; this.shootInterval = 14;
     this.bulletLevel = 1;
     this.shield = 0; this.speedBoost = 0; this.invincible = 0;
-    this.missileTimer = 0; this.missileInterval = 90;
-    this.hasMissile = false; this.missileLevel = 0;
+    this.missileTimer = 0; this.missileInterval = 300;
+    this.hasMissile = true; this.missileLevel = 0;
   }
   draw(time) { drawPlayer(this.x, this.y, this.invincible, this.shield, this.speedBoost, time); }
   shoot(bullets) {
@@ -837,7 +837,7 @@ class Player {
   launchMissile(missiles) {
     if (!this.hasMissile) return;
     this.missileTimer++;
-    const interval = this.missileLevel >= 2 ? 60 : this.missileInterval;
+    const interval = this.missileLevel >= 2 ? 180 : this.missileInterval;
     if (this.missileTimer >= interval) {
       this.missileTimer = 0;
       missiles.push(new Missile(this.x - 12, this.y - 15));
