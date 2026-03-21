@@ -100,10 +100,10 @@ canvas { display: block; }
 .btn-small.selected { border-color: #FFD700; background: rgba(255,215,0,0.35); color: #FFD700; }
 .btn-small.disabled { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.3); pointer-events: none; background: rgba(0,0,0,0.1); }
 .hidden { display: none !important; }
-.level-grid { display: flex; flex-wrap: wrap; justify-content: center; max-width: 380px; gap: 12px; margin: 15px 0; }
+.level-grid { display: flex; flex-wrap: wrap; justify-content: center; max-width: 420px; gap: 8px; margin: 15px 0; }
 .level-btn {
-  width: 64px; height: 64px; border: 3px solid #fff; background: rgba(255,255,255,0.25);
-  color: #fff; font-size: 24px; font-weight: bold;
+  width: 52px; height: 52px; border: 3px solid #fff; background: rgba(255,255,255,0.25);
+  color: #fff; font-size: 18px; font-weight: bold;
   font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif;
   cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
   transition: all 0.2s; border-radius: 50%;
@@ -761,34 +761,48 @@ function drawEnemyBullet(x, y, size, boss) {
 
 // ============ BACKGROUND THEMES ============
 const LEVEL_THEMES = [
-  { bg1: '#87CEEB', bg2: '#E3F2FD' },
-  { bg1: '#81D4FA', bg2: '#B3E5FC' },
-  { bg1: '#CE93D8', bg2: '#F3E5F5' },
-  { bg1: '#F48FB1', bg2: '#FCE4EC' },
-  { bg1: '#FFAB91', bg2: '#FFF3E0' },
-  { bg1: '#80DEEA', bg2: '#E0F7FA' },
-  { bg1: '#FFE082', bg2: '#FFFDE7' },
-  { bg1: '#B39DDB', bg2: '#EDE7F6' },
-  { bg1: '#80CBC4', bg2: '#E0F2F1' },
-  { bg1: '#9FA8DA', bg2: '#E8EAF6' },
+  // 1-5: 天空
+  { bg1: '#87CEEB', bg2: '#E3F2FD', name: '晴空' },
+  { bg1: '#81D4FA', bg2: '#B3E5FC', name: '蓝天' },
+  { bg1: '#4FC3F7', bg2: '#B3E5FC', name: '高空' },
+  { bg1: '#29B6F6', bg2: '#81D4FA', name: '云端' },
+  { bg1: '#039BE5', bg2: '#4FC3F7', name: '风暴前' },
+  // 6-10: 沙漠
+  { bg1: '#FFB74D', bg2: '#FFF3E0', name: '沙丘' },
+  { bg1: '#FFA726', bg2: '#FFE0B2', name: '戈壁' },
+  { bg1: '#FF9800', bg2: '#FFCC80', name: '沙暴' },
+  { bg1: '#F57C00', bg2: '#FFB74D', name: '烈日' },
+  { bg1: '#EF6C00', bg2: '#FFA726', name: '绿洲' },
+  // 11-15: 敌军基地
+  { bg1: '#78909C', bg2: '#CFD8DC', name: '前哨' },
+  { bg1: '#607D8B', bg2: '#B0BEC5', name: '堡垒' },
+  { bg1: '#546E7A', bg2: '#90A4AE', name: '兵工厂' },
+  { bg1: '#455A64', bg2: '#78909C', name: '指挥部' },
+  { bg1: '#37474F', bg2: '#607D8B', name: '核心' },
+  // 16-20: 太空
+  { bg1: '#1A237E', bg2: '#311B92', name: '近地轨道' },
+  { bg1: '#0D47A1', bg2: '#1A237E', name: '星云' },
+  { bg1: '#4A148C', bg2: '#311B92', name: '黑暗星域' },
+  { bg1: '#1B0033', bg2: '#4A148C', name: '虫洞' },
+  { bg1: '#000000', bg2: '#1A237E', name: '最终决战' },
 ];
 
 // ============ LEVEL CONFIG ============
 function getLevelConfig(level) {
-  const L = Math.min(level, 10);
+  const L = Math.min(level, 20);
   return {
     level: L,
-    enemyHpMult: 0.6 + L * 0.2,
-    enemySpeedMult: (0.5 + L * 0.12) * 0.7,
-    spawnInterval: Math.max(25, 100 - L * 6),
-    extraSpawnChance: Math.min(0.35, Math.max(0, (L - 3) * 0.06)),
-    enemyShootMult: (0.7 + L * 0.12) * 0.7,
-    enemyBulletSpeed: (2.5 + L * 0.4) * 0.7,
-    killsToWin: 10 + L * 5,
-    tankMinLevel: 5, heliMinLevel: 3, bigPlaneMinLevel: 3,
-    bossHp: 30 + L * 15,
-    bossType: L <= 3 ? 0 : L <= 6 ? 1 : 2,
-    theme: LEVEL_THEMES[(L - 1) % 10],
+    enemyHpMult: 0.6 + L * 0.15,
+    enemySpeedMult: (0.5 + L * 0.08) * 0.7,
+    spawnInterval: Math.max(18, 100 - L * 4),
+    extraSpawnChance: Math.min(0.4, Math.max(0, (L - 3) * 0.04)),
+    enemyShootMult: (0.7 + L * 0.08) * 0.7,
+    enemyBulletSpeed: (2.5 + L * 0.3) * 0.7,
+    killsToWin: 10 + L * 4,
+    tankMinLevel: 4, heliMinLevel: 3, bigPlaneMinLevel: 2,
+    bossHp: 30 + L * 12,
+    bossType: L <= 7 ? 0 : L <= 14 ? 1 : 2,
+    theme: LEVEL_THEMES[(L - 1) % 20],
   };
 }
 
@@ -1135,7 +1149,7 @@ class Decoy {
 class BounceBall {
   constructor(x, y) {
     this.x = x; this.y = y;
-    this.r = 10; this.life = 600; // 10 seconds
+    this.r = 15; this.life = 600; // 10 seconds
     this.damage = 2;
     const angle = Math.random() * Math.PI * 2;
     this.speed = 7;
@@ -1516,6 +1530,17 @@ function drawGradientBg(theme) {
   grd.addColorStop(1, theme.bg2);
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, W, H);
+  // Space levels: draw twinkling stars
+  if (theme.bg1.startsWith('#1') || theme.bg1 === '#0D47A1' || theme.bg1 === '#000000') {
+    for (let i = 0; i < 40; i++) {
+      const sx = (i * 137.5 + 50) % W, sy = (i * 97.3 + 30) % H;
+      const twinkle = 0.3 + Math.sin(Date.now() * 0.003 + i) * 0.3;
+      ctx.globalAlpha = twinkle;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(sx, sy, 1 + (i % 3), 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
 }
 
 // ============ MENU SYSTEM ============
@@ -1617,7 +1642,7 @@ function buyEquip(id) {
 function buildLevelGrid() {
   const grid = document.getElementById('level-grid');
   grid.innerHTML = '';
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= 20; i++) {
     const btn = document.createElement('button');
     const cleared = clearedLevels.includes(i);
     const locked = i > maxUnlocked;
@@ -1626,7 +1651,7 @@ function buildLevelGrid() {
     if (!locked) btn.onclick = () => playLevel(i);
     grid.appendChild(btn);
   }
-  document.getElementById('level-hint').textContent = maxUnlocked > 10 ? '🎉 全部通关! 🎉' : `已解锁: ${maxUnlocked}/10`;
+  document.getElementById('level-hint').textContent = maxUnlocked > 20 ? '🎉 全部通关! 🎉' : `已解锁: ${maxUnlocked}/20`;
 }
 
 function showLevelSelect() {
@@ -1687,7 +1712,7 @@ function playNextLevel() { if (currentLevel < 10) playLevel(currentLevel + 1); e
 function levelCleared() {
   game.running = false; stopBGM();
   if (!clearedLevels.includes(currentLevel)) clearedLevels.push(currentLevel);
-  if (currentLevel >= maxUnlocked && currentLevel < 10) maxUnlocked = currentLevel + 1;
+  if (currentLevel >= maxUnlocked && currentLevel < 20) maxUnlocked = currentLevel + 1;
   saveProgress();
   document.getElementById('clear-level').textContent = currentLevel;
   document.getElementById('clear-score').textContent = game.score;
@@ -1763,13 +1788,13 @@ function loop() {
     ctx.fillRect(0, 0, W, H);
   }
 
-  g.bgClouds.forEach(c => { const origSpeed = c.speed; c.speed *= smf; c.update(); c.speed = origSpeed; c.draw(); });
-  g.rainbow.update(); g.rainbow.draw();
+  if (g.cfg.level <= 10) { g.bgClouds.forEach(c => { const origSpeed = c.speed; c.speed *= smf; c.update(); c.speed = origSpeed; c.draw(); }); }
+  if (g.cfg.level <= 10) { g.rainbow.update(); g.rainbow.draw(); }
 
   if (g.levelAnnounce > 0) {
     g.levelAnnounce--;
     if (g.levelAnnounce > 30 || Math.floor(g.levelAnnounce/4)%2) {
-      drawText(`STAGE ${g.cfg.level}`, W/2, H/2 - 20, 'rgba(255,255,255,0.6)', 20, 'rgba(0,0,0,0.15)');
+      drawText(`STAGE ${g.cfg.level} · ${g.cfg.theme.name || ''}`, W/2, H/2 - 20, 'rgba(255,255,255,0.6)', 20, 'rgba(0,0,0,0.15)');
       drawText(`消灭 ${g.cfg.killsToWin} 个 + BOSS`, W/2, H/2 + 8, 'rgba(255,255,255,0.5)', 13);
     }
   }
