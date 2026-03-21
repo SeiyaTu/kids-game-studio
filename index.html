@@ -1108,6 +1108,92 @@ class Missile {
   }
 }
 
+// ============ BLACKHOLE ============
+class BlackHole {
+  constructor(x, y) {
+    this.x = x; this.y = y;
+    this.radius = 45; this.life = 180; this.maxLife = 180;
+    this.angle = 0; this.speed = 2;
+  }
+  update(enemies, boss, game) {
+    const sm = game.slowMotion ? 0.2 : 1;
+    this.y -= this.speed * sm;
+    this.angle += 0.08 * sm;
+    this.life--;
+    // Attract & kill normal enemies within 80px
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const e = enemies[i];
+      const dx = this.x - e.x, dy = this.y - e.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 80) {
+        const pull = 4 * sm;
+        e.x += (dx / dist) * pull;
+        e.y += (dy / dist) * pull;
+        if (dist < 15) {
+          // Kill enemy
+          game.combo.registerKill();
+          game.score += e.score * game.combo.getMultiplier();
+          game.killCount++;
+          game.explosions.push(new Explosion(e.x, e.y, '#CE93D8', e.type >= 1));
+          sfxExplosion(e.type >= 1);
+          const starCounts = { 0: 1, 1: 3, 2: 3, 3: 2 };
+          spawnStars(e.x, e.y, starCounts[e.type] || 1);
+          enemies.splice(i, 1);
+        }
+      }
+    }
+    // Damage boss
+    if (boss && boss.alive && boss.entered) {
+      const dx = this.x - boss.x, dy = this.y - boss.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 120) {
+        boss.hp -= 0.5 * sm;
+        boss.hitFlash = 2;
+        if (boss.hp <= 0) { boss.hp = 0; boss.alive = false; return 'boss_dead'; }
+      }
+    }
+    return null;
+  }
+  draw(time) {
+    const scale = this.life < 30 ? this.life / 30 : 1;
+    const r = this.radius * scale;
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.angle);
+    // Outer glow
+    const glow = ctx.createRadialGradient(0, 0, r * 0.1, 0, 0, r * 1.2);
+    glow.addColorStop(0, 'rgba(80,0,120,0.7)');
+    glow.addColorStop(0.5, 'rgba(120,40,180,0.3)');
+    glow.addColorStop(1, 'rgba(80,0,120,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(0, 0, r * 1.2, 0, Math.PI * 2); ctx.fill();
+    // Spiral arms
+    for (let arm = 0; arm < 4; arm++) {
+      ctx.beginPath();
+      const armOff = (Math.PI * 2 / 4) * arm;
+      for (let t = 0; t < 3; t += 0.05) {
+        const sr = t * r * 0.33;
+        const sa = t * 2.5 + armOff;
+        const px = Math.cos(sa) * sr, py = Math.sin(sa) * sr;
+        t === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = `rgba(180,100,255,${0.6 * scale})`;
+      ctx.lineWidth = 3 * scale; ctx.stroke();
+    }
+    // Center dark core
+    const core = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 0.35);
+    core.addColorStop(0, 'rgba(0,0,0,0.9)');
+    core.addColorStop(1, 'rgba(60,0,80,0.3)');
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.35, 0, Math.PI * 2); ctx.fill();
+    // Outer ring distortion
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(200,150,255,${0.4 * scale})`; ctx.lineWidth = 2 * scale; ctx.stroke();
+    ctx.restore();
+  }
+  get done() { return this.life <= 0 || this.y < -60; }
+}
+
 // ============ POWERUP ============
 class PowerUp {
   constructor(x, y) {
@@ -1241,10 +1327,52 @@ function updateHeartsDisplay(lives) {
 // ============ GAME STATE ============
 let game = null, targetX = null, targetY = null;
 
-canvas.addEventListener('mousemove', e => { if(game&&game.running){targetX=e.clientX;targetY=e.clientY;} });
+canvas.addEventListener('mousemove', e => { if(game&&game.running){targetX=e.clientX;targetY=e.clientY; if(game.slowMotion){game.slowMotion=false;game.showBlackholeBtn=false;}} });
 canvas.addEventListener('touchmove', e => { e.preventDefault(); if(game&&game.running){targetX=e.touches[0].clientX;targetY=e.touches[0].clientY;} }, {passive:false});
-canvas.addEventListener('touchstart', e => { e.preventDefault(); initAudio(); if(game&&game.running){targetX=e.touches[0].clientX;targetY=e.touches[0].clientY;} }, {passive:false});
-canvas.addEventListener('mousedown', () => initAudio());
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault(); initAudio();
+  if(game&&game.running){
+    const tx=e.touches[0].clientX, ty=e.touches[0].clientY;
+    // Check blackhole button click
+    if(game.showBlackholeBtn && game.blackholeReady && !game.blackhole){
+      const dx=tx-game.blackholeBtnX, dy=ty-game.blackholeBtnY;
+      if(Math.sqrt(dx*dx+dy*dy)<30){
+        game.blackhole=new BlackHole(game.player.x, game.player.y-30);
+        game.blackholeReady=false;
+        game.blackholeCooldown=0;
+        game.showBlackholeBtn=false;
+        game.slowMotion=false;
+        return;
+      }
+    }
+    targetX=tx;targetY=ty;
+    game.slowMotion=false;game.showBlackholeBtn=false;
+  }
+}, {passive:false});
+canvas.addEventListener('touchend', e => {
+  if(game&&game.running){ game.slowMotion=true; if(game.blackholeReady&&!game.blackhole) game.showBlackholeBtn=true; }
+});
+canvas.addEventListener('mousedown', e => {
+  initAudio();
+  if(game&&game.running&&game.showBlackholeBtn&&game.blackholeReady&&!game.blackhole){
+    const dx=e.clientX-game.blackholeBtnX, dy=e.clientY-game.blackholeBtnY;
+    if(Math.sqrt(dx*dx+dy*dy)<30){
+      game.blackhole=new BlackHole(game.player.x, game.player.y-30);
+      game.blackholeReady=false;
+      game.blackholeCooldown=0;
+      game.showBlackholeBtn=false;
+      game.slowMotion=false;
+      return;
+    }
+  }
+  if(game&&game.running){game.slowMotion=false;game.showBlackholeBtn=false;}
+});
+canvas.addEventListener('mouseup', () => {
+  if(game&&game.running){ game.slowMotion=true; if(game.blackholeReady&&!game.blackhole) game.showBlackholeBtn=true; }
+});
+canvas.addEventListener('mouseleave', () => {
+  if(game&&game.running){ game.slowMotion=true; if(game.blackholeReady&&!game.blackhole) game.showBlackholeBtn=true; }
+});
 
 function collides(a, b) { return Math.abs(a.x-b.x)<(a.w+b.w)/2 && Math.abs(a.y-b.y)<(a.h+b.h)/2; }
 
@@ -1410,6 +1538,13 @@ function playLevel(level) {
     formationTimer: 0, formationWave: 0,
     slowMo: 0, slowMoAccum: 0,
     starsCollected: 0,
+    blackholeReady: true,
+    blackholeCooldown: 0,
+    blackhole: null,
+    slowMotion: false,
+    showBlackholeBtn: false,
+    blackholeBtnX: 0,
+    blackholeBtnY: 0,
   };
   updateHeartsDisplay(game.lives);
   startBGM(); loop();
@@ -1487,7 +1622,16 @@ function loop() {
 
   drawGradientBg(theme);
 
-  g.bgClouds.forEach(c => { c.update(); c.draw(); });
+  // Slow motion speed factor
+  const smf = g.slowMotion ? 0.2 : 1;
+
+  // Slow motion dark overlay
+  if (g.slowMotion) {
+    ctx.fillStyle = 'rgba(0,0,20,0.25)';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  g.bgClouds.forEach(c => { const origSpeed = c.speed; c.speed *= smf; c.update(); c.speed = origSpeed; c.draw(); });
   g.rainbow.update(); g.rainbow.draw();
 
   if (g.levelAnnounce > 0) {
@@ -1509,8 +1653,8 @@ function loop() {
   g.player.launchMissile(g.missiles, g.enemies);
 
   // Update bullets
-  g.bullets = g.bullets.filter(b => { b.x+=b.vx; b.y+=b.vy; return b.y>-10&&b.x>-10&&b.x<W+10; });
-  g.enemyBullets = g.enemyBullets.filter(b => { b.x+=b.vx; b.y+=b.vy; return b.y<H+10&&b.y>-10&&b.x>-10&&b.x<W+10; });
+  g.bullets = g.bullets.filter(b => { b.x+=b.vx*smf; b.y+=b.vy*smf; return b.y>-10&&b.x>-10&&b.x<W+10; });
+  g.enemyBullets = g.enemyBullets.filter(b => { b.x+=b.vx*smf; b.y+=b.vy*smf; return b.y<H+10&&b.y>-10&&b.x>-10&&b.x<W+10; });
 
   // Spawn
   g.frame++;
@@ -1530,8 +1674,8 @@ function loop() {
     }
   }
 
-  // Update enemies
-  g.enemies.forEach(e => e.update(g.enemyBullets, g.player.x));
+  // Update enemies (with slow motion)
+  g.enemies.forEach(e => { const origSpeed = e.speed; e.speed *= smf; e.update(g.enemyBullets, g.player.x); e.speed = origSpeed; });
 
   // Update boss
   if (g.boss && g.boss.alive) {
@@ -1621,7 +1765,7 @@ function loop() {
   });
 
   // Update stars
-  g.stars.forEach(s => s.update(g.player.x, g.player.y));
+  g.stars.forEach(s => { const origSpeed = s.speed; s.speed *= smf; s.update(g.player.x, g.player.y); s.speed = origSpeed; });
   g.stars = g.stars.filter(s => {
     if (s.y > H + 30) return false;
     if (s.collected) {
@@ -1634,6 +1778,19 @@ function loop() {
     return true;
   });
 
+  // Blackhole cooldown
+  if (!g.blackholeReady && !g.blackhole) {
+    g.blackholeCooldown++;
+    if (g.blackholeCooldown >= 1800) { g.blackholeReady = true; g.blackholeCooldown = 0; }
+  }
+
+  // Update blackhole
+  if (g.blackhole) {
+    const bhResult = g.blackhole.update(g.enemies, g.boss, g);
+    if (bhResult === 'boss_dead') handleBossDeath();
+    if (g.blackhole.done) g.blackhole = null;
+  }
+
   // ====== DRAW ALL ======
   g.enemyBullets.forEach(b => drawEnemyBullet(b.x, b.y, b.r || 4, b.boss));
   g.bullets.forEach(b => drawPlayerBullet(b.x, b.y, time));
@@ -1643,6 +1800,60 @@ function loop() {
   g.powerups.forEach(p => p.draw());
   g.stars.forEach(s => s.draw(time));
   g.player.draw(time);
+
+  // Draw blackhole
+  if (g.blackhole) g.blackhole.draw(time);
+
+  // Draw blackhole button
+  if (g.showBlackholeBtn && g.blackholeReady && !g.blackhole) {
+    const btnX = g.player.x + 60, btnY = g.player.y - 40;
+    g.blackholeBtnX = btnX; g.blackholeBtnY = btnY;
+    const pulse = 1 + Math.sin(time * 0.15) * 0.12;
+    ctx.save();
+    ctx.translate(btnX, btnY);
+    ctx.scale(pulse, pulse);
+    // Button bg
+    ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(60,0,80,0.8)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(180,100,255,0.8)'; ctx.lineWidth = 3; ctx.stroke();
+    // Mini vortex
+    for (let arm = 0; arm < 3; arm++) {
+      ctx.beginPath();
+      const armOff = (Math.PI * 2 / 3) * arm + time * 0.1;
+      for (let t = 0; t < 2.5; t += 0.1) {
+        const sr = t * 8, sa = t * 2 + armOff;
+        const px = Math.cos(sa) * sr, py = Math.sin(sa) * sr;
+        t === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = 'rgba(200,140,255,0.7)'; ctx.lineWidth = 2; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#000'; ctx.fill();
+    ctx.restore();
+  }
+
+  // Boss pull visual effect from blackhole
+  if (g.blackhole && g.boss && g.boss.alive && g.boss.entered) {
+    const dx = g.blackhole.x - g.boss.x, dy = g.blackhole.y - g.boss.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 120) {
+      ctx.save();
+      ctx.globalAlpha = 0.3;
+      ctx.strokeStyle = '#B060FF';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      for (let i = 0; i < 3; i++) {
+        const off = (time * 3 + i * 40) % 120;
+        const t = off / 120;
+        const lx = g.boss.x + dx * t, ly = g.boss.y + dy * t;
+        ctx.beginPath(); ctx.arc(lx, ly, 4, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+  }
+
   g.explosions.forEach(e => { e.update(); e.draw(); });
   g.explosions = g.explosions.filter(e => !e.done);
 
@@ -1685,6 +1896,22 @@ function loop() {
   if (g.player.speedBoost>0) parts.push('⚡');
   if (g.player.hasMissile) parts.push('🚀');
   pd.textContent = parts.join(' ');
+
+  // Blackhole UI indicator
+  const bhUIx = 50, bhUIy = H - 40;
+  if (g.blackholeReady) {
+    drawText('🕳️', bhUIx, bhUIy, '#fff', 24);
+  } else if (!g.blackhole) {
+    // Cooldown circle
+    ctx.beginPath(); ctx.arc(bhUIx, bhUIy, 14, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(100,100,100,0.4)'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(bhUIx, bhUIy);
+    ctx.arc(bhUIx, bhUIy, 14, -Math.PI / 2, -Math.PI / 2 + (g.blackholeCooldown / 1800) * Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(180,100,255,0.6)'; ctx.fill();
+    const secs = Math.ceil((1800 - g.blackholeCooldown) / 60);
+    drawText(`${secs}`, bhUIx, bhUIy, '#fff', 11);
+  }
 
   ctx.restore();
 
