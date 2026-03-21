@@ -241,6 +241,7 @@ const PLANES = {
   green:  { name:'绿色坦克', cost:80,  color:'#66BB6A', desc:'+4HP 慢速',   hpMod:4,  shootMod:1,   speedMod:0.7,  special:null },
   purple: { name:'紫色幻影', cost:120, color:'#AB47BC', desc:'双倍导弹',     hpMod:0,  shootMod:1,   speedMod:1,    special:'doubleMissile' },
   gold:   { name:'金色凤凰', cost:200, color:'#FFD54F', desc:'全能+免死',    hpMod:2,  shootMod:0.9, speedMod:1.1,  special:'revive' },
+  ew:     { name:'电子战机', cost:200, color:'#00E5FF', desc:'偏转子弹+幻影', hpMod:0, shootMod:1,   speedMod:1,    special:'ew' },
 };
 
 const EQUIPS = [
@@ -884,6 +885,8 @@ class Player {
 
     this.speedMod = plane.speedMod;
     this.canRevive = plane.special === 'revive';
+    this.isEW = plane.special === 'ew';
+    this.decoyTimer = 0; this.decoyInterval = 180; // spawn decoy every 3s
     this.bulletDamage = 1 + (hasEquip('bigbullet') ? 1 : 0);
   }
   draw(time) { drawPlayer(this.x, this.y, this.invincible, this.shield, this.speedBoost, time); }
@@ -1106,6 +1109,24 @@ class Missile {
     ctx.fillStyle = '#FFE082'; ctx.fill();
     ctx.restore();
   }
+}
+
+// ============ DECOY (EW Plane phantom) ============
+class Decoy {
+  constructor(x, y) {
+    this.x = x + (Math.random() - 0.5) * 80;
+    this.y = y + (Math.random() - 0.5) * 40;
+    this.life = 240; this.w = 40; this.h = 40;
+    this.alpha = 0.5; this.flickerPhase = Math.random() * Math.PI * 2;
+  }
+  update() { this.life--; this.flickerPhase += 0.15; }
+  draw(time) {
+    const a = this.life < 30 ? (this.life / 30) * 0.4 : 0.3 + Math.sin(this.flickerPhase) * 0.1;
+    ctx.globalAlpha = a;
+    drawPlayer(this.x, this.y, 0, 0, 0, time);
+    ctx.globalAlpha = 1;
+  }
+  get done() { return this.life <= 0; }
 }
 
 // ============ BLACKHOLE ============
@@ -1559,6 +1580,7 @@ function playLevel(level) {
     showBlackholeBtn: false,
     blackholeBtnX: 0,
     blackholeBtnY: 0,
+    decoys: [],
   };
   updateHeartsDisplay(game.lives);
   startBGM(); loop();
@@ -1669,6 +1691,38 @@ function loop() {
   // Update bullets
   g.bullets = g.bullets.filter(b => { b.x+=b.vx*smf; b.y+=b.vy*smf; return b.y>-10&&b.x>-10&&b.x<W+10; });
   g.enemyBullets = g.enemyBullets.filter(b => { b.x+=b.vx*smf; b.y+=b.vy*smf; return b.y<H+10&&b.y>-10&&b.x>-10&&b.x<W+10; });
+
+  // EW plane: deflect enemy bullets & spawn decoys
+  if (g.player.isEW) {
+    g.enemyBullets.forEach(b => {
+      const dx = b.x - g.player.x, dy = b.y - g.player.y;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      if (dist < 120) {
+        // deflect: push bullet sideways away from player
+        const nx = dx/dist, ny = dy/dist;
+        b.vx += nx * 0.8; b.vy += ny * 0.3;
+      }
+    });
+    // redirect some bullets toward decoys
+    g.decoys.forEach(d => {
+      g.enemyBullets.forEach(b => {
+        const dx = d.x - b.x, dy = d.y - b.y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if (dist < 100 && dist > 10) {
+          b.vx += (dx/dist) * 0.4; b.vy += (dy/dist) * 0.4;
+        }
+        // bullet hits decoy → destroy both
+        if (dist < 15) { d.life = 0; b.y = -999; }
+      });
+    });
+    g.player.decoyTimer++;
+    if (g.player.decoyTimer >= g.player.decoyInterval) {
+      g.player.decoyTimer = 0;
+      g.decoys.push(new Decoy(g.player.x, g.player.y));
+    }
+  }
+  g.decoys.forEach(d => d.update());
+  g.decoys = g.decoys.filter(d => !d.done);
 
   // Spawn
   g.frame++;
@@ -1813,6 +1867,7 @@ function loop() {
   g.missiles.forEach(m => m.draw());
   g.powerups.forEach(p => p.draw());
   g.stars.forEach(s => s.draw(time));
+  g.decoys.forEach(d => d.draw(time));
   g.player.draw(time);
 
   // Draw blackhole
