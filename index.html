@@ -1112,20 +1112,34 @@ class Missile {
 class BlackHole {
   constructor(x, y) {
     this.x = x; this.y = y;
-    this.radius = 45; this.life = 180; this.maxLife = 180;
+    this.radius = 50; this.life = 9999; this.maxLife = 9999;
     this.angle = 0; this.speed = 2;
   }
   update(enemies, boss, game) {
     const sm = game.slowMotion ? 0.2 : 1;
     this.y -= this.speed * sm;
     this.angle += 0.08 * sm;
-    this.life--;
-    // Attract & kill normal enemies within 80px
+    if (this.y < -60) return 'expired';
+    // Absorb enemy bullets within 100px
+    if (game.enemyBullets) {
+      for (let i = game.enemyBullets.length - 1; i >= 0; i--) {
+        const b = game.enemyBullets[i];
+        const dx = this.x - b.x, dy = this.y - b.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 100) {
+          const pull = 5 * sm;
+          b.x += (dx / dist) * pull;
+          b.y += (dy / dist) * pull;
+          if (dist < 20) game.enemyBullets.splice(i, 1);
+        }
+      }
+    }
+    // Attract & kill normal enemies within 100px
     for (let i = enemies.length - 1; i >= 0; i--) {
       const e = enemies[i];
       const dx = this.x - e.x, dy = this.y - e.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < 80) {
+      if (dist < 100) {
         const pull = 4 * sm;
         e.x += (dx / dist) * pull;
         e.y += (dy / dist) * pull;
@@ -1155,7 +1169,7 @@ class BlackHole {
     return null;
   }
   draw(time) {
-    const scale = this.life < 30 ? this.life / 30 : 1;
+    const scale = 1;
     const r = this.radius * scale;
     ctx.save();
     ctx.translate(this.x, this.y);
@@ -1191,7 +1205,7 @@ class BlackHole {
     ctx.strokeStyle = `rgba(200,150,255,${0.4 * scale})`; ctx.lineWidth = 2 * scale; ctx.stroke();
     ctx.restore();
   }
-  get done() { return this.life <= 0 || this.y < -60; }
+  get done() { return this.y < -60; }
 }
 
 // ============ POWERUP ============
