@@ -18,8 +18,8 @@ canvas { display: block; }
 }
 #ui-center { font-size: 14px; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
 #combo-display {
-  position: absolute; top: 45%; left: 50%; transform: translate(-50%,-60%);
-  font-size: 56px; font-weight: bold;
+  position: absolute; top: 12%; left: 50%; transform: translate(-50%,-60%);
+  font-size: 28px; font-weight: bold;
   font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif;
   pointer-events: none; z-index: 15;
   opacity: 0; transition: opacity 0.15s, transform 0.2s;
@@ -32,7 +32,7 @@ canvas { display: block; }
   text-shadow: none;
   animation: comboBounce 0.3s ease;
 }
-#combo-display.break { opacity:1; color: #FF6B6B; -webkit-text-fill-color: #FF6B6B; font-size: 40px; }
+#combo-display.break { opacity:1; color: #FF6B6B; -webkit-text-fill-color: #FF6B6B; font-size: 22px; }
 @keyframes comboBounce { 0%{transform:translate(-50%,-60%) scale(1.4)} 100%{transform:translate(-50%,-60%) scale(1)} }
 #boss-hp-bar {
   position: absolute; top: 45px; left: 50%; transform: translateX(-50%);
@@ -1497,8 +1497,8 @@ function loop() {
   if (g.levelAnnounce > 0) {
     g.levelAnnounce--;
     if (g.levelAnnounce > 30 || Math.floor(g.levelAnnounce/4)%2) {
-      drawText(`STAGE ${g.cfg.level}`, W/2, H/2 - 20, '#fff', 32, 'rgba(0,0,0,0.3)');
-      drawText(`消灭 ${g.cfg.killsToWin} 个 + BOSS`, W/2, H/2 + 15, 'rgba(255,255,255,0.8)', 18);
+      drawText(`STAGE ${g.cfg.level}`, W/2, H/2 - 20, 'rgba(255,255,255,0.6)', 20, 'rgba(0,0,0,0.15)');
+      drawText(`消灭 ${g.cfg.killsToWin} 个 + BOSS`, W/2, H/2 + 8, 'rgba(255,255,255,0.5)', 13);
     }
   }
 
@@ -1657,10 +1657,10 @@ function loop() {
     const alpha = Math.min(1, g.powerupMsgTimer / 20);
     ctx.globalAlpha = alpha;
     ctx.beginPath();
-    const tw = ctx.measureText(g.powerupMsg).width + 30;
-    ctx.roundRect(W/2 - tw/2, msgY - 16, tw, 32, 16);
-    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fill();
-    drawText(g.powerupMsg, W/2, msgY, '#FF9800', 20);
+    const tw = ctx.measureText(g.powerupMsg).width + 20;
+    ctx.roundRect(W/2 - tw/2, msgY - 10, tw, 22, 11);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fill();
+    drawText(g.powerupMsg, W/2, msgY, '#FF9800', 14);
     ctx.globalAlpha = 1;
   }
 
