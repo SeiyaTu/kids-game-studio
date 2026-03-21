@@ -88,6 +88,17 @@ canvas { display: block; }
 }
 .btn:hover, .btn:active { background: rgba(255,255,255,0.45); transform: scale(1.08); }
 .btn.locked { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.3); pointer-events: none; background: rgba(0,0,0,0.1); }
+.btn-small {
+  padding: 10px 20px; font-size: 16px; border: 2px solid #fff;
+  background: rgba(255,255,255,0.25); color: #fff;
+  font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif;
+  cursor: pointer; transition: all 0.2s; margin: 4px; letter-spacing: 1px;
+  border-radius: 20px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+  backdrop-filter: blur(4px);
+}
+.btn-small:hover, .btn-small:active { background: rgba(255,255,255,0.45); transform: scale(1.05); }
+.btn-small.selected { border-color: #FFD700; background: rgba(255,215,0,0.35); color: #FFD700; }
+.btn-small.disabled { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.3); pointer-events: none; background: rgba(0,0,0,0.1); }
 .hidden { display: none !important; }
 .level-grid { display: flex; flex-wrap: wrap; justify-content: center; max-width: 380px; gap: 12px; margin: 15px 0; }
 .level-btn {
@@ -104,22 +115,64 @@ canvas { display: block; }
 .level-btn.locked { border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.25); background: rgba(0,0,0,0.1); cursor: not-allowed; }
 .level-btn.cleared { border-color: #FFD700; color: #FFD700; background: rgba(255,215,0,0.25); box-shadow: 0 0 12px rgba(255,215,0,0.4); }
 .level-btn.cleared span { color: #FFD700; }
+.shop-list { width: 85%; max-width: 360px; max-height: 55vh; overflow-y: auto; margin: 10px 0; }
+.shop-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; margin: 6px 0; border-radius: 16px;
+  background: rgba(255,255,255,0.15); backdrop-filter: blur(4px);
+  border: 2px solid rgba(255,255,255,0.3);
+}
+.shop-item .item-info { flex: 1; text-align: left; }
+.shop-item .item-name { font-size: 16px; font-weight: bold; }
+.shop-item .item-desc { font-size: 12px; color: rgba(255,255,255,0.7); }
+.shop-item .plane-dot { width: 20px; height: 20px; border-radius: 50%; margin-right: 10px; border: 2px solid rgba(255,255,255,0.5); }
 </style>
 </head>
 <body>
 
-<div id="start-screen" class="overlay">
+<!-- Main Menu -->
+<div id="main-menu" class="overlay">
+  <h1>🌈 飞行大冒险</h1>
+  <p>== CARTOON SHOOTER ==</p>
+  <div class="score" id="menu-stars">⭐ 0</div>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <button class="btn" onclick="showLevelSelect()">🎮 选关</button>
+    <button class="btn" onclick="showHangar()">✈️ 飞机库</button>
+    <button class="btn" onclick="showShop()">🛒 装备库</button>
+  </div>
+</div>
+
+<!-- Hangar -->
+<div id="hangar-screen" class="overlay hidden">
+  <h1>✈️ 飞机库</h1>
+  <div class="score" id="hangar-stars">⭐ 0</div>
+  <div class="shop-list" id="hangar-list"></div>
+  <button class="btn" onclick="showMainMenu()">返回</button>
+</div>
+
+<!-- Shop -->
+<div id="shop-screen" class="overlay hidden">
+  <h1>🛒 装备库</h1>
+  <div class="score" id="shop-stars">⭐ 0</div>
+  <div class="shop-list" id="shop-list"></div>
+  <button class="btn" onclick="showMainMenu()">返回</button>
+</div>
+
+<div id="start-screen" class="overlay hidden">
   <h1>🌈 飞行大冒险</h1>
   <p>== CARTOON SHOOTER ==</p>
   <p style="font-size:13px;color:rgba(255,255,255,0.7);">触屏拖动 / 鼠标控制 · 自动射击 · 导弹追踪</p>
   <div class="level-grid" id="level-grid"></div>
   <p id="level-hint" style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:5px;"></p>
+  <button class="btn" onclick="showMainMenu()" style="margin-top:10px;">返回主菜单</button>
 </div>
 
 <div id="level-clear" class="overlay hidden">
   <h1>🎉 STAGE CLEAR 🎉</h1>
   <div class="score">第 <span id="clear-level">1</span> 关 · 得分：<span id="clear-score">0</span></div>
+  <div class="score" id="clear-stars-collected" style="font-size:20px;"></div>
   <div style="display:flex;gap:10px;">
+    <button class="btn" onclick="showMainMenu()">主菜单</button>
     <button class="btn" onclick="showLevelSelect()">选关</button>
     <button class="btn" id="next-btn" onclick="playNextLevel()">下一关 >></button>
   </div>
@@ -128,7 +181,9 @@ canvas { display: block; }
 <div id="gameover-screen" class="overlay hidden">
   <h1>💫 GAME OVER</h1>
   <div class="score">第 <span id="fail-level">1</span> 关 · 得分：<span id="final-score">0</span></div>
+  <div class="score" id="fail-stars-collected" style="font-size:20px;"></div>
   <div style="display:flex;gap:10px;">
+    <button class="btn" onclick="showMainMenu()">主菜单</button>
     <button class="btn" onclick="showLevelSelect()">选关</button>
     <button class="btn" onclick="playLevel(currentLevel)">再来一次!</button>
   </div>
@@ -137,7 +192,7 @@ canvas { display: block; }
 <div id="ui" class="hidden">
   <div id="lives-display"></div>
   <div id="ui-center"></div>
-  <div>✨<span id="score">0</span></div>
+  <div><span id="ui-stars" style="margin-right:8px;"></span>✨<span id="score">0</span></div>
 </div>
 
 <div id="combo-display"></div>
@@ -160,6 +215,44 @@ function resize() {
   H = canvas.height = window.innerHeight;
 }
 resize(); window.addEventListener('resize', resize);
+
+// ============ SAVE DATA ============
+let maxUnlocked = parseInt(localStorage.getItem('maxUnlocked') || '1');
+let clearedLevels = JSON.parse(localStorage.getItem('clearedLevels') || '[]');
+let currentLevel = 1;
+let totalStars = parseInt(localStorage.getItem('totalStars') || '0');
+let ownedPlanes = JSON.parse(localStorage.getItem('ownedPlanes') || '["blue"]');
+let selectedPlane = localStorage.getItem('selectedPlane') || 'blue';
+let ownedEquips = JSON.parse(localStorage.getItem('ownedEquips') || '[]');
+
+function saveProgress() {
+  localStorage.setItem('maxUnlocked', maxUnlocked);
+  localStorage.setItem('clearedLevels', JSON.stringify(clearedLevels));
+  localStorage.setItem('totalStars', totalStars);
+  localStorage.setItem('ownedPlanes', JSON.stringify(ownedPlanes));
+  localStorage.setItem('selectedPlane', selectedPlane);
+  localStorage.setItem('ownedEquips', JSON.stringify(ownedEquips));
+}
+
+// ============ PLANES & EQUIPS ============
+const PLANES = {
+  blue:   { name:'蓝色小鸟', cost:0,   color:'#64B5F6', desc:'均衡型',       hpMod:0,  shootMod:1,   speedMod:1,    special:null },
+  red:    { name:'红色火箭', cost:50,  color:'#EF5350', desc:'快射-2HP',     hpMod:-2, shootMod:0.8, speedMod:1.15, special:null },
+  green:  { name:'绿色坦克', cost:80,  color:'#66BB6A', desc:'+4HP 慢速',   hpMod:4,  shootMod:1,   speedMod:0.7,  special:null },
+  purple: { name:'紫色幻影', cost:120, color:'#AB47BC', desc:'双倍导弹',     hpMod:0,  shootMod:1,   speedMod:1,    special:'doubleMissile' },
+  gold:   { name:'金色凤凰', cost:200, color:'#FFD54F', desc:'全能+免死',    hpMod:2,  shootMod:0.9, speedMod:1.1,  special:'revive' },
+};
+
+const EQUIPS = [
+  { id:'magnet',    name:'磁铁',     cost:30,  desc:'星星吸附范围×2' },
+  { id:'armor',     name:'厚甲',     cost:40,  desc:'HP+2' },
+  { id:'rapid',     name:'快射',     cost:50,  desc:'射速+20%' },
+  { id:'bigbullet', name:'大弹头',   cost:60,  desc:'伤害+1' },
+  { id:'missile',   name:'导弹专家', cost:80,  desc:'导弹间隔减半' },
+  { id:'lucky',     name:'幸运星',   cost:100, desc:'掉落率×2' },
+];
+
+function hasEquip(id) { return ownedEquips.includes(id); }
 
 // ============ AUDIO SYSTEM ============
 let audioCtx = null, masterGain = null, soundEnabled = true, bgmPlaying = false, bgmInterval = null;
@@ -210,6 +303,7 @@ function sfxPickup() { playTone(1200, 0.08, 'sine', 0.1); setTimeout(() => playT
 function sfxBossAlarm() { for (let i = 0; i < 4; i++) { setTimeout(() => playTone(400, 0.15, 'square', 0.12), i*300); setTimeout(() => playTone(600, 0.15, 'square', 0.12), i*300+150); } }
 function sfxCombo(count) { playTone(400 + count * 80, 0.1, 'square', 0.08); }
 function sfxBossDeath() { for (let i = 0; i < 8; i++) setTimeout(() => sfxExplosion(true), i * 100); }
+function sfxStarPickup() { playTone(1400, 0.06, 'sine', 0.08); }
 function startBGM() {
   if (!audioCtx || !soundEnabled || bgmPlaying) return;
   bgmPlaying = true;
@@ -282,6 +376,12 @@ function drawPlayer(x, y, invincible, shield, speedBoost, time) {
   if (invincible > 0 && Math.floor(invincible / 4) % 2) return;
   ctx.save(); ctx.translate(x, y);
 
+  const planeData = PLANES[selectedPlane] || PLANES.blue;
+  const mainColor = planeData.color;
+  // Derive darker shade for outlines
+  const darkerColor = darkenColor(mainColor, 0.7);
+  const lighterColor = lightenColor(mainColor, 0.3);
+
   // Tail flame (animated)
   const flameOff = Math.sin(time * 0.3) * 3;
   const flameH = 18 + Math.sin(time * 0.5) * 5;
@@ -302,8 +402,8 @@ function drawPlayer(x, y, invincible, shield, speedBoost, time) {
   ctx.fillStyle = '#FF7043'; ctx.fill();
   ctx.strokeStyle = '#E64A19'; ctx.lineWidth = 1.5; ctx.stroke();
 
-  // Main body (sky blue)
-  drawEllipse(0, 0, 16, 22, '#64B5F6', '#42A5F5', 2);
+  // Main body
+  drawEllipse(0, 0, 16, 22, mainColor, darkerColor, 2);
 
   // White belly highlight
   ctx.beginPath();
@@ -313,12 +413,12 @@ function drawPlayer(x, y, invincible, shield, speedBoost, time) {
   // Wings (round)
   ctx.beginPath();
   ctx.ellipse(-24, 6, 14, 7, -0.2, 0, Math.PI * 2);
-  ctx.fillStyle = '#42A5F5'; ctx.fill();
-  ctx.strokeStyle = '#1E88E5'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = darkerColor; ctx.fill();
+  ctx.strokeStyle = darkenColor(mainColor, 0.5); ctx.lineWidth = 1.5; ctx.stroke();
   ctx.beginPath();
   ctx.ellipse(24, 6, 14, 7, 0.2, 0, Math.PI * 2);
-  ctx.fillStyle = '#42A5F5'; ctx.fill();
-  ctx.strokeStyle = '#1E88E5'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = darkerColor; ctx.fill();
+  ctx.strokeStyle = darkenColor(mainColor, 0.5); ctx.lineWidth = 1.5; ctx.stroke();
 
   // Wing highlights
   drawEllipse(-24, 4, 8, 3, 'rgba(255,255,255,0.3)');
@@ -349,11 +449,20 @@ function drawPlayer(x, y, invincible, shield, speedBoost, time) {
   ctx.restore();
 }
 
+// Color helpers
+function darkenColor(hex, factor) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.floor(r*factor)},${Math.floor(g*factor)},${Math.floor(b*factor)})`;
+}
+function lightenColor(hex, factor) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.min(255,Math.floor(r+(255-r)*factor))},${Math.min(255,Math.floor(g+(255-g)*factor))},${Math.min(255,Math.floor(b+(255-b)*factor))})`;
+}
+
 // ============ DRAW ENEMIES ============
 // Type 0: Orange alien blob
 function drawEnemySmall(x, y, time, flash) {
   ctx.save(); ctx.translate(x, y);
-  // Antennae
   const wobble = Math.sin(time * 0.1 + x) * 4;
   ctx.beginPath(); ctx.moveTo(-6, -14); ctx.quadraticCurveTo(-8 + wobble, -26, -4, -28);
   ctx.strokeStyle = '#F57C00'; ctx.lineWidth = 2; ctx.stroke();
@@ -361,31 +470,22 @@ function drawEnemySmall(x, y, time, flash) {
   ctx.beginPath(); ctx.moveTo(6, -14); ctx.quadraticCurveTo(8 - wobble, -26, 4, -28);
   ctx.strokeStyle = '#F57C00'; ctx.lineWidth = 2; ctx.stroke();
   drawCircle(4, -28, 3, '#FFD54F');
-
-  // Body
   drawEllipse(0, 0, 16, 14, flash || '#FF9800', '#E65100', 2);
-  // Belly highlight
   drawEllipse(0, 3, 10, 7, 'rgba(255,255,255,0.25)');
-  // Big eyes
   drawEllipse(-6, -4, 6, 6, '#fff', '#333', 1.5);
   drawEllipse(6, -4, 6, 6, '#fff', '#333', 1.5);
   drawCircle(-5, -3, 3, '#333');
   drawCircle(7, -3, 3, '#333');
-  // Eye shine
   drawCircle(-7, -6, 1.5, '#fff');
   drawCircle(5, -6, 1.5, '#fff');
-  // Goofy smile
   ctx.beginPath(); ctx.arc(0, 4, 6, 0.1, Math.PI - 0.1);
   ctx.strokeStyle = '#BF360C'; ctx.lineWidth = 1.5; ctx.stroke();
-
   ctx.restore();
 }
 
 // Type 1: Purple space jellyfish
 function drawEnemyBig(x, y, time, flash) {
   ctx.save(); ctx.translate(x, y);
-
-  // Tentacles (wavy)
   for (let i = -2; i <= 2; i++) {
     const tx = i * 10;
     const wave = Math.sin(time * 0.08 + i * 1.5) * 6;
@@ -395,57 +495,43 @@ function drawEnemyBig(x, y, time, flash) {
     ctx.strokeStyle = `rgba(186,104,200,${0.5 + Math.abs(i) * 0.1})`;
     ctx.lineWidth = 3 - Math.abs(i) * 0.5; ctx.lineCap = 'round'; ctx.stroke();
   }
-
-  // Dome (semi-transparent)
   ctx.beginPath();
   ctx.ellipse(0, 0, 24, 18, 0, Math.PI, 0);
   ctx.ellipse(0, 0, 24, 8, 0, 0, Math.PI);
   ctx.closePath();
   ctx.fillStyle = flash || 'rgba(186,104,200,0.7)'; ctx.fill();
   ctx.strokeStyle = '#7B1FA2'; ctx.lineWidth = 2; ctx.stroke();
-
-  // Inner glow
   const glow = ctx.createRadialGradient(0, -4, 2, 0, -4, 18);
   glow.addColorStop(0, 'rgba(255,255,255,0.4)');
   glow.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = glow;
   ctx.beginPath(); ctx.ellipse(0, -4, 18, 14, 0, 0, Math.PI*2); ctx.fill();
-
-  // Eyes (droopy, cute)
   drawEllipse(-8, -4, 5, 6, '#fff', '#4A148C', 1.5);
   drawEllipse(8, -4, 5, 6, '#fff', '#4A148C', 1.5);
   drawCircle(-7, -2, 2.5, '#4A148C');
   drawCircle(9, -2, 2.5, '#4A148C');
   drawCircle(-9, -6, 1.5, '#fff');
   drawCircle(7, -6, 1.5, '#fff');
-  // ~_~ mouth
   ctx.beginPath(); ctx.moveTo(-5, 5); ctx.bezierCurveTo(-2, 8, 2, 8, 5, 5);
   ctx.strokeStyle = '#4A148C'; ctx.lineWidth = 1.5; ctx.stroke();
-
   ctx.restore();
 }
 
 // Type 2: Flying turtle (tank)
 function drawEnemyTank(x, y, time, flash) {
   ctx.save(); ctx.translate(x, y);
-
-  // Legs (little flippers)
   for (const side of [-1, 1]) {
     ctx.beginPath();
     ctx.ellipse(side * 20, 8, 8, 4, side * 0.3, 0, Math.PI * 2);
     ctx.fillStyle = '#66BB6A'; ctx.fill();
     ctx.strokeStyle = '#2E7D32'; ctx.lineWidth = 1.5; ctx.stroke();
   }
-
-  // Shell
   ctx.beginPath();
   ctx.ellipse(0, 0, 22, 16, 0, Math.PI, 0);
   ctx.ellipse(0, 0, 22, 6, 0, 0, Math.PI);
   ctx.closePath();
   ctx.fillStyle = flash || '#4CAF50'; ctx.fill();
   ctx.strokeStyle = '#2E7D32'; ctx.lineWidth = 2.5; ctx.stroke();
-
-  // Spiral on shell
   ctx.beginPath();
   for (let a = 0; a < Math.PI * 4; a += 0.15) {
     const r = a * 1.8;
@@ -454,26 +540,19 @@ function drawEnemyTank(x, y, time, flash) {
     a === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
   }
   ctx.strokeStyle = '#81C784'; ctx.lineWidth = 1.5; ctx.stroke();
-
-  // Head
   drawEllipse(0, 12, 10, 8, '#A5D6A7', '#388E3C', 2);
-  // Eyes
   drawCircle(-4, 10, 3, '#fff', '#1B5E20', 1);
   drawCircle(4, 10, 3, '#fff', '#1B5E20', 1);
   drawCircle(-4, 11, 1.5, '#1B5E20');
   drawCircle(4, 11, 1.5, '#1B5E20');
-  // Determined mouth
   ctx.beginPath(); ctx.moveTo(-3, 16); ctx.lineTo(3, 16);
   ctx.strokeStyle = '#1B5E20'; ctx.lineWidth = 1.5; ctx.stroke();
-
   ctx.restore();
 }
 
 // Type 3: Pink dragonfly (heli)
 function drawEnemyHeli(x, y, time, flash) {
   ctx.save(); ctx.translate(x, y);
-
-  // Wings (fast flapping)
   const wingAngle = Math.sin(time * 0.8) * 0.4;
   for (const side of [-1, 1]) {
     ctx.save();
@@ -484,7 +563,6 @@ function drawEnemyHeli(x, y, time, flash) {
     ctx.fillStyle = 'rgba(248,187,208,0.6)';
     ctx.fill();
     ctx.strokeStyle = '#F06292'; ctx.lineWidth = 1; ctx.stroke();
-    // Lower wings
     ctx.beginPath();
     ctx.ellipse(side * 14, 10, 15, 5, side * 0.3, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(248,187,208,0.4)';
@@ -492,20 +570,16 @@ function drawEnemyHeli(x, y, time, flash) {
     ctx.strokeStyle = '#F06292'; ctx.lineWidth = 1; ctx.stroke();
     ctx.restore();
   }
-
-  // Body (elongated)
   ctx.beginPath();
   ctx.ellipse(0, 0, 8, 14, 0, 0, Math.PI * 2);
   ctx.fillStyle = flash || '#F48FB1'; ctx.fill();
   ctx.strokeStyle = '#C2185B'; ctx.lineWidth = 2; ctx.stroke();
-
   // Tail
   ctx.beginPath();
   ctx.moveTo(0, 14);
   ctx.quadraticCurveTo(2, 28, 0, 34);
   ctx.strokeStyle = '#F48FB1'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
   ctx.strokeStyle = '#C2185B'; ctx.lineWidth = 2; ctx.stroke();
-
   // Big eyes
   drawCircle(-4, -6, 5, '#fff', '#880E4F', 1.5);
   drawCircle(4, -6, 5, '#fff', '#880E4F', 1.5);
@@ -513,16 +587,12 @@ function drawEnemyHeli(x, y, time, flash) {
   drawCircle(5, -5, 2.5, '#880E4F');
   drawCircle(-5, -8, 1.5, '#fff');
   drawCircle(3, -8, 1.5, '#fff');
-
   ctx.restore();
 }
 
 // ============ BOSS DRAWING ============
-// Boss 0: Red octopus
 function drawBoss0(x, y, time, enraged, flash) {
   ctx.save(); ctx.translate(x, y);
-
-  // Tentacles (8)
   for (let i = 0; i < 8; i++) {
     const angle = (Math.PI * 2 / 8) * i + Math.PI * 0.1;
     const baseX = Math.cos(angle) * 30;
@@ -533,22 +603,15 @@ function drawBoss0(x, y, time, enraged, flash) {
     ctx.quadraticCurveTo(baseX + wave, baseY + 15, baseX + wave * 0.7, baseY + 35);
     ctx.strokeStyle = enraged ? '#D32F2F' : '#E57373';
     ctx.lineWidth = 5 - i * 0.3; ctx.lineCap = 'round'; ctx.stroke();
-    // Suction cups
     drawCircle(baseX + wave * 0.7, baseY + 33, 3, '#FFCDD2');
   }
-
-  // Head dome
   ctx.beginPath();
   ctx.ellipse(0, -5, 38, 32, 0, 0, Math.PI * 2);
   ctx.fillStyle = flash || (enraged ? '#D32F2F' : '#EF5350'); ctx.fill();
   ctx.strokeStyle = '#B71C1C'; ctx.lineWidth = 3; ctx.stroke();
-
-  // Spots
   drawCircle(-15, -15, 5, 'rgba(255,255,255,0.2)');
   drawCircle(10, -18, 4, 'rgba(255,255,255,0.2)');
   drawCircle(20, -5, 3, 'rgba(255,255,255,0.2)');
-
-  // Eyes
   drawEllipse(-12, -5, 10, 12, '#fff', '#B71C1C', 2);
   drawEllipse(12, -5, 10, 12, '#fff', '#B71C1C', 2);
   const pupilY = enraged ? -3 : -5;
@@ -556,16 +619,12 @@ function drawBoss0(x, y, time, enraged, flash) {
   drawCircle(13, pupilY, 5, '#333');
   drawCircle(-13, pupilY - 3, 2, '#fff');
   drawCircle(11, pupilY - 3, 2, '#fff');
-
-  // Angry eyebrows when enraged
   if (enraged) {
     ctx.beginPath(); ctx.moveTo(-22, -18); ctx.lineTo(-4, -14);
     ctx.strokeStyle = '#B71C1C'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(22, -18); ctx.lineTo(4, -14);
     ctx.strokeStyle = '#B71C1C'; ctx.lineWidth = 4; ctx.stroke();
   }
-
-  // Mouth
   if (enraged) {
     ctx.beginPath(); ctx.moveTo(-10, 12); ctx.lineTo(-5, 18); ctx.lineTo(5, 18); ctx.lineTo(10, 12);
     ctx.fillStyle = '#B71C1C'; ctx.fill();
@@ -573,53 +632,40 @@ function drawBoss0(x, y, time, enraged, flash) {
     ctx.beginPath(); ctx.arc(0, 10, 8, 0.1, Math.PI - 0.1);
     ctx.strokeStyle = '#B71C1C'; ctx.lineWidth = 2; ctx.stroke();
   }
-
   ctx.restore();
 }
 
-// Boss 1: Golden mech crab
 function drawBoss1(x, y, time, enraged, flash) {
   ctx.save(); ctx.translate(x, y);
-
-  // Claws (open/close)
   const clawAngle = Math.sin(time * 0.05) * 0.4;
   for (const side of [-1, 1]) {
     ctx.save();
     ctx.translate(side * 40, -5);
-    // Upper claw
     ctx.save(); ctx.rotate(side * clawAngle);
     ctx.beginPath();
     ctx.ellipse(side * 12, -8, 14, 6, side * 0.3, 0, Math.PI * 2);
     ctx.fillStyle = flash || '#FFB300'; ctx.fill();
     ctx.strokeStyle = '#E65100'; ctx.lineWidth = 2; ctx.stroke();
     ctx.restore();
-    // Lower claw
     ctx.save(); ctx.rotate(side * -clawAngle);
     ctx.beginPath();
     ctx.ellipse(side * 12, 8, 14, 6, side * -0.3, 0, Math.PI * 2);
     ctx.fillStyle = flash || '#FFC107'; ctx.fill();
     ctx.strokeStyle = '#E65100'; ctx.lineWidth = 2; ctx.stroke();
     ctx.restore();
-    // Arm
     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(side * 5, 0);
     ctx.strokeStyle = '#F57F17'; ctx.lineWidth = 6; ctx.stroke();
     ctx.restore();
   }
-
-  // Body
   ctx.beginPath();
   ctx.ellipse(0, 0, 36, 24, 0, 0, Math.PI * 2);
   ctx.fillStyle = flash || '#FFC107'; ctx.fill();
   ctx.strokeStyle = '#E65100'; ctx.lineWidth = 3; ctx.stroke();
-
-  // Metallic ridges
   for (let i = -2; i <= 2; i++) {
     ctx.beginPath();
     ctx.ellipse(i * 10, 0, 3, 20, 0, 0, Math.PI * 2);
     ctx.strokeStyle = 'rgba(230,81,0,0.2)'; ctx.lineWidth = 1; ctx.stroke();
   }
-
-  // Eyes (on stalks)
   for (const side of [-1, 1]) {
     ctx.beginPath(); ctx.moveTo(side * 12, -20); ctx.lineTo(side * 16, -32);
     ctx.strokeStyle = '#F57F17'; ctx.lineWidth = 4; ctx.stroke();
@@ -633,8 +679,6 @@ function drawBoss1(x, y, time, enraged, flash) {
       ctx.strokeStyle = '#E65100'; ctx.lineWidth = 3; ctx.stroke();
     }
   }
-
-  // Legs (6)
   for (let i = 0; i < 3; i++) {
     for (const side of [-1, 1]) {
       const lx = side * (20 + i * 8);
@@ -644,15 +688,11 @@ function drawBoss1(x, y, time, enraged, flash) {
       ctx.strokeStyle = '#F57F17'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
     }
   }
-
   ctx.restore();
 }
 
-// Boss 2: Dark purple space whale
 function drawBoss2(x, y, time, enraged, flash) {
   ctx.save(); ctx.translate(x, y);
-
-  // Tail
   const tailWave = Math.sin(time * 0.04) * 8;
   ctx.beginPath();
   ctx.moveTo(0, 25);
@@ -660,19 +700,13 @@ function drawBoss2(x, y, time, enraged, flash) {
   ctx.quadraticCurveTo(tailWave * 0.5, 50, 15, 60);
   ctx.quadraticCurveTo(-tailWave, 50, 0, 25);
   ctx.fillStyle = '#6A1B9A'; ctx.fill();
-
-  // Body
   ctx.beginPath();
   ctx.ellipse(0, 0, 44, 28, 0, 0, Math.PI * 2);
   ctx.fillStyle = flash || (enraged ? '#6A1B9A' : '#7B1FA2'); ctx.fill();
   ctx.strokeStyle = '#4A148C'; ctx.lineWidth = 3; ctx.stroke();
-
-  // Belly (lighter)
   ctx.beginPath();
   ctx.ellipse(0, 8, 32, 14, 0, 0, Math.PI);
   ctx.fillStyle = 'rgba(206,147,216,0.4)'; ctx.fill();
-
-  // Fins
   for (const side of [-1, 1]) {
     ctx.beginPath();
     ctx.moveTo(side * 30, -5);
@@ -682,8 +716,6 @@ function drawBoss2(x, y, time, enraged, flash) {
     ctx.fillStyle = '#8E24AA'; ctx.fill();
     ctx.strokeStyle = '#4A148C'; ctx.lineWidth = 1.5; ctx.stroke();
   }
-
-  // Eyes
   drawEllipse(-14, -6, 8, 10, '#fff', '#4A148C', 2);
   drawEllipse(14, -6, 8, 10, '#fff', '#4A148C', 2);
   const pupilY = enraged ? -4 : -7;
@@ -691,68 +723,53 @@ function drawBoss2(x, y, time, enraged, flash) {
   drawCircle(15, pupilY, 4, '#4A148C');
   drawCircle(-15, pupilY - 2, 2, '#fff');
   drawCircle(13, pupilY - 2, 2, '#fff');
-
   if (enraged) {
     ctx.beginPath(); ctx.moveTo(-22, -18); ctx.lineTo(-6, -14);
     ctx.strokeStyle = '#4A148C'; ctx.lineWidth = 3; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(22, -18); ctx.lineTo(6, -14);
     ctx.strokeStyle = '#4A148C'; ctx.lineWidth = 3; ctx.stroke();
   }
-
-  // Mouth (opens to shoot)
   const mouthOpen = Math.sin(time * 0.04) > 0.3 ? 5 : 2;
   ctx.beginPath();
   ctx.ellipse(0, 12, 10, mouthOpen, 0, 0, Math.PI * 2);
   ctx.fillStyle = '#4A148C'; ctx.fill();
-
-  // Stars on body
   drawStar(-25, -10, 4, 4, 'rgba(255,255,255,0.3)', time * 0.02);
   drawStar(20, -15, 3, 4, 'rgba(255,255,255,0.3)', -time * 0.02);
-
   ctx.restore();
 }
 
 // ============ DRAW BULLETS ============
 function drawPlayerBullet(x, y, time) {
-  // Blue glowing star
   const rot = time * 0.15;
-  const glow = ctx.createRadialGradient(x, y, 0, x, y, 10);
-  glow.addColorStop(0, 'rgba(100,210,255,0.6)');
-  glow.addColorStop(1, 'rgba(100,210,255,0)');
+  const glow = ctx.createRadialGradient(x, y, 0, x, y, 12);
+  glow.addColorStop(0, 'rgba(100,181,246,0.6)');
+  glow.addColorStop(1, 'rgba(100,181,246,0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(x - 10, y - 10, 20, 20);
-  drawStar(x, y, 6, 5, '#64D2FF', rot);
+  ctx.fillRect(x - 12, y - 12, 24, 24);
+  drawStar(x, y, 6, 5, '#64B5F6', rot);
   drawStar(x, y, 3, 5, '#fff', rot);
 }
 
 function drawEnemyBullet(x, y, size, boss) {
-  const r = boss ? size * 1.5 : size;
-  // Trail
+  const r = boss ? size * 1.5 : Math.min(size, 4);
   ctx.beginPath(); ctx.arc(x, y, r + 2, 0, Math.PI * 2);
-  ctx.fillStyle = boss ? 'rgba(255,152,0,0.2)' : 'rgba(255,171,64,0.2)'; ctx.fill();
-  drawCircle(x, y, r, boss ? '#FF9800' : '#FFAB40', boss ? '#E65100' : '#FF6D00', 1.5);
-  // Shine
+  ctx.fillStyle = boss ? 'rgba(255,112,67,0.2)' : 'rgba(255,112,67,0.15)'; ctx.fill();
+  drawCircle(x, y, r, boss ? '#FF7043' : '#FF7043', boss ? '#BF360C' : '#D84315', 1.5);
   drawCircle(x - r * 0.3, y - r * 0.3, r * 0.3, 'rgba(255,255,255,0.5)');
 }
 
-// ============ SAVE DATA ============
-let maxUnlocked = parseInt(localStorage.getItem('maxUnlocked') || '1');
-let clearedLevels = JSON.parse(localStorage.getItem('clearedLevels') || '[]');
-let currentLevel = 1;
-function saveProgress() { localStorage.setItem('maxUnlocked', maxUnlocked); localStorage.setItem('clearedLevels', JSON.stringify(clearedLevels)); }
-
 // ============ BACKGROUND THEMES ============
 const LEVEL_THEMES = [
-  { bg1: '#87CEEB', bg2: '#E3F2FD' },  // 1: sunny sky
-  { bg1: '#81D4FA', bg2: '#B3E5FC' },  // 2: light blue
-  { bg1: '#CE93D8', bg2: '#F3E5F5' },  // 3: lavender
-  { bg1: '#F48FB1', bg2: '#FCE4EC' },  // 4: pink
-  { bg1: '#FFAB91', bg2: '#FFF3E0' },  // 5: sunset peach
-  { bg1: '#80DEEA', bg2: '#E0F7FA' },  // 6: cyan
-  { bg1: '#FFE082', bg2: '#FFFDE7' },  // 7: golden
-  { bg1: '#B39DDB', bg2: '#EDE7F6' },  // 8: purple
-  { bg1: '#80CBC4', bg2: '#E0F2F1' },  // 9: teal
-  { bg1: '#9FA8DA', bg2: '#E8EAF6' },  // 10: indigo
+  { bg1: '#87CEEB', bg2: '#E3F2FD' },
+  { bg1: '#81D4FA', bg2: '#B3E5FC' },
+  { bg1: '#CE93D8', bg2: '#F3E5F5' },
+  { bg1: '#F48FB1', bg2: '#FCE4EC' },
+  { bg1: '#FFAB91', bg2: '#FFF3E0' },
+  { bg1: '#80DEEA', bg2: '#E0F7FA' },
+  { bg1: '#FFE082', bg2: '#FFFDE7' },
+  { bg1: '#B39DDB', bg2: '#EDE7F6' },
+  { bg1: '#80CBC4', bg2: '#E0F2F1' },
+  { bg1: '#9FA8DA', bg2: '#E8EAF6' },
 ];
 
 // ============ LEVEL CONFIG ============
@@ -803,16 +820,71 @@ class Rainbow {
   }
 }
 
+// ============ STAR COLLECTIBLE ============
+class StarCollectible {
+  constructor(x, y) {
+    this.x = x + (Math.random() - 0.5) * 30;
+    this.y = y + (Math.random() - 0.5) * 20;
+    this.speed = 0.8;
+    this.age = 0;
+    this.w = 16; this.h = 16;
+    this.collected = false;
+  }
+  update(playerX, playerY) {
+    this.age++;
+    const magnetRange = hasEquip('magnet') ? 200 : 100;
+    const dx = playerX - this.x, dy = playerY - this.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < magnetRange) {
+      const pullSpeed = dist < 40 ? 8 : 3;
+      this.x += (dx / dist) * pullSpeed;
+      this.y += (dy / dist) * pullSpeed;
+    } else {
+      this.y += this.speed;
+    }
+    if (dist < 20) {
+      this.collected = true;
+    }
+  }
+  draw(time) {
+    const rot = (this.age + time) * 0.08;
+    const bounce = Math.sin(this.age * 0.12) * 2;
+    ctx.globalAlpha = 0.9;
+    // Glow
+    const glow = ctx.createRadialGradient(this.x, this.y + bounce, 0, this.x, this.y + bounce, 14);
+    glow.addColorStop(0, 'rgba(255,215,0,0.4)');
+    glow.addColorStop(1, 'rgba(255,215,0,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(this.x - 14, this.y + bounce - 14, 28, 28);
+    drawStar(this.x, this.y + bounce, 10, 5, '#FFD700', rot);
+    drawStar(this.x, this.y + bounce, 5, 5, '#FFF9C4', rot);
+    ctx.globalAlpha = 1;
+  }
+}
+
 // ============ PLAYER ============
 class Player {
   constructor() {
     this.w = 50; this.h = 50;
     this.x = W / 2; this.y = H - 100;
-    this.shootTimer = 0; this.shootInterval = 14;
+
+    const plane = PLANES[selectedPlane] || PLANES.blue;
+    const baseHp = 8 + plane.hpMod + (hasEquip('armor') ? 2 : 0);
+    this.maxPlayerHp = baseHp;
+
+    this.shootTimer = 0;
+    this.shootInterval = Math.floor(14 * plane.shootMod * (hasEquip('rapid') ? 0.8 : 1));
     this.bulletLevel = 1;
     this.shield = 0; this.speedBoost = 0; this.invincible = 0;
-    this.missileTimer = 250; this.missileInterval = 300;
+
+    const missileMult = (plane.special === 'doubleMissile' ? 0.5 : 1) * (hasEquip('missile') ? 0.5 : 1);
+    this.missileInterval = Math.floor(300 * missileMult);
+    this.missileTimer = Math.floor(this.missileInterval * 0.83);
     this.hasMissile = true; this.missileLevel = 0;
+
+    this.speedMod = plane.speedMod;
+    this.canRevive = plane.special === 'revive';
+    this.bulletDamage = 1 + (hasEquip('bigbullet') ? 1 : 0);
   }
   draw(time) { drawPlayer(this.x, this.y, this.invincible, this.shield, this.speedBoost, time); }
   shoot(bullets) {
@@ -836,7 +908,7 @@ class Player {
   }
   launchMissile(missiles, enemies) {
     this.missileTimer++;
-    const interval = this.missileLevel >= 2 ? 180 : this.missileInterval;
+    const interval = this.missileLevel >= 2 ? Math.floor(this.missileInterval * 0.6) : this.missileInterval;
     if (this.missileTimer >= interval && enemies.length > 0) {
       this.missileTimer = 0;
       missiles.push(new Missile(this.x - 12, this.y - 15));
@@ -858,13 +930,13 @@ class Enemy {
     const hm = cfg.enemyHpMult, sm = cfg.enemySpeedMult, bs = cfg.enemyBulletSpeed;
     switch(type) {
       case 0: this.w = 32; this.h = 32; this.speed = (0.8+Math.random()*0.5)*sm; this.hp = Math.ceil(1*hm); this.maxHp = this.hp; this.score = 10;
-        this.shootInterval = Math.max(20, Math.floor(100/cfg.enemyShootMult)); this.canShoot = cfg.level > 1; this.bulletSpeed = bs; break;
+        this.shootInterval = Math.max(20, Math.floor(120/cfg.enemyShootMult)); this.canShoot = cfg.level > 1; this.bulletSpeed = bs; break;
       case 1: this.w = 48; this.h = 44; this.speed = (0.3+Math.random()*0.2)*sm; this.hp = Math.ceil(5*hm); this.maxHp = this.hp; this.score = 50;
-        this.shootInterval = Math.max(16, Math.floor(65/cfg.enemyShootMult)); this.canShoot = true; this.bulletSpeed = bs; break;
+        this.shootInterval = Math.max(16, Math.floor(75/cfg.enemyShootMult)); this.canShoot = true; this.bulletSpeed = bs; break;
       case 2: this.w = 50; this.h = 38; this.speed = (0.2+Math.random()*0.1)*sm; this.hp = Math.ceil(8*hm); this.maxHp = this.hp; this.score = 80;
-        this.shootInterval = Math.max(14, Math.floor(45/cfg.enemyShootMult)); this.canShoot = true; this.bulletSpeed = bs + 0.4; break;
+        this.shootInterval = Math.max(14, Math.floor(52/cfg.enemyShootMult)); this.canShoot = true; this.bulletSpeed = bs + 0.4; break;
       case 3: this.w = 44; this.h = 40; this.speed = (0.4+Math.random()*0.2)*sm; this.hp = Math.ceil(3*hm); this.maxHp = this.hp; this.score = 35;
-        this.shootInterval = Math.max(16, Math.floor(75/cfg.enemyShootMult)); this.canShoot = true; this.bulletSpeed = bs;
+        this.shootInterval = Math.max(16, Math.floor(90/cfg.enemyShootMult)); this.canShoot = true; this.bulletSpeed = bs;
         this.moveDir = Math.random() > 0.5 ? 1 : -1; break;
     }
   }
@@ -896,7 +968,6 @@ class Enemy {
       case 2: drawEnemyTank(this.x, this.y, time, flash); break;
       case 3: drawEnemyHeli(this.x, this.y, time, flash); break;
     }
-    // HP bar for tough enemies
     if (this.maxHp > 1) {
       const bw = this.w + 8, bx = this.x - bw/2, by = this.y - this.h/2 - 10;
       drawRoundRect(bx, by, bw, 5, 2, 'rgba(0,0,0,0.2)');
@@ -1027,17 +1098,14 @@ class Missile {
     this.x += this.vx; this.y += this.vy;
   }
   draw() {
-    // Trail
     this.trail.forEach(t => {
       const a = t.life / 10;
       drawCircle(t.x, t.y, 3 * a, `rgba(255,183,77,${a * 0.5})`);
     });
-    // Missile body
     const angle = Math.atan2(this.vy, this.vx);
     ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle + Math.PI/2);
     drawRoundRect(-4, -10, 8, 20, 4, '#fff');
     drawCircle(0, -10, 5, '#FF7043');
-    // Flame at back
     ctx.beginPath(); ctx.moveTo(-4, 10); ctx.quadraticCurveTo(0, 20 + Math.random()*6, 4, 10);
     ctx.fillStyle = '#FFE082'; ctx.fill();
     ctx.restore();
@@ -1063,29 +1131,27 @@ class PowerUp {
   draw() {
     const bounce = Math.sin(this.age * 0.1) * 3;
     const y = this.y + bounce;
-    // Glow
     ctx.beginPath(); ctx.arc(this.x, y, 16, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255,255,255,0.3)`; ctx.fill();
-    // Icon
     const c = this.colors[this.type];
     switch(this.type) {
-      case 0: case 1: // Weapon upgrade - star
+      case 0: case 1:
         drawStar(this.x, y, 12, 6, c, this.age * 0.05);
         drawStar(this.x, y, 6, 6, '#fff', this.age * 0.05);
         break;
-      case 2: // Shield - diamond
+      case 2:
         ctx.save(); ctx.translate(this.x, y); ctx.rotate(Math.PI/4);
         drawRoundRect(-8, -8, 16, 16, 3, c);
         drawRoundRect(-4, -4, 8, 8, 2, '#fff');
         ctx.restore(); break;
-      case 3: // Life - heart
+      case 3:
         drawHeart(this.x, y - 4, 14, c);
         break;
-      case 4: // Speed - lightning
+      case 4:
         ctx.beginPath(); ctx.moveTo(this.x-2, y-12); ctx.lineTo(this.x-6, y); ctx.lineTo(this.x, y-2);
         ctx.lineTo(this.x+2, y+12); ctx.lineTo(this.x+6, y); ctx.lineTo(this.x, y+2); ctx.closePath();
         ctx.fillStyle = c; ctx.fill(); break;
-      case 5: // Missile - rocket
+      case 5:
         drawRoundRect(this.x-4, y-10, 8, 20, 4, c);
         drawCircle(this.x, y-10, 4, '#FFD54F');
         break;
@@ -1105,7 +1171,7 @@ class PowerUp {
   }
 }
 
-// ============ EXPLOSION (Colorful fireworks + confetti + stars) ============
+// ============ EXPLOSION ============
 class Explosion {
   constructor(x, y, color, big) {
     this.particles = [];
@@ -1136,7 +1202,6 @@ class MegaExplosion {
   constructor(x, y) {
     this.particles = [];
     const colors = ['#fff','#FFE082','#FFB74D','#FF80AB','#CE93D8','#64FFDA','#81C784','#64D2FF','#FF6B6B','#FFD54F'];
-    // Rainbow ring
     for (let layer = 0; layer < 5; layer++) {
       const count = 20 + layer * 8; const delay = layer * 5;
       for (let i = 0; i < count; i++) {
@@ -1195,13 +1260,107 @@ function drawText(text, x, y, color, size, outline) {
   ctx.fillStyle = color; ctx.fillText(text, x, y);
 }
 
-// ============ DRAW GRADIENT BACKGROUND ============
 function drawGradientBg(theme) {
   const grd = ctx.createLinearGradient(0, 0, 0, H);
   grd.addColorStop(0, theme.bg1);
   grd.addColorStop(1, theme.bg2);
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, W, H);
+}
+
+// ============ MENU SYSTEM ============
+function hideAllScreens() {
+  ['main-menu','start-screen','level-clear','gameover-screen','hangar-screen','shop-screen'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+}
+
+function showMainMenu() {
+  hideAllScreens(); stopBGM();
+  if (game) game.running = false;
+  document.getElementById('ui').classList.add('hidden');
+  document.getElementById('boss-hp-bar').style.display = 'none';
+  document.getElementById('boss-name').style.display = 'none';
+  document.getElementById('combo-display').className = '';
+  document.getElementById('combo-glow').style.opacity = 0;
+  document.getElementById('menu-stars').textContent = `⭐ ${totalStars}`;
+  document.getElementById('main-menu').classList.remove('hidden');
+}
+
+function showHangar() {
+  hideAllScreens();
+  document.getElementById('hangar-stars').textContent = `⭐ ${totalStars}`;
+  const list = document.getElementById('hangar-list');
+  list.innerHTML = '';
+  for (const [id, p] of Object.entries(PLANES)) {
+    const owned = ownedPlanes.includes(id);
+    const selected = selectedPlane === id;
+    const item = document.createElement('div');
+    item.className = 'shop-item';
+    item.innerHTML = `
+      <div class="plane-dot" style="background:${p.color}"></div>
+      <div class="item-info">
+        <div class="item-name">${p.name}</div>
+        <div class="item-desc">${p.desc}</div>
+      </div>
+      ${owned
+        ? `<button class="btn-small ${selected ? 'selected' : ''}" onclick="selectPlane('${id}')">${selected ? '✅ 已选' : '选择'}</button>`
+        : `<button class="btn-small ${totalStars >= p.cost ? '' : 'disabled'}" onclick="buyPlane('${id}')">购买 ${p.cost}⭐</button>`
+      }
+    `;
+    list.appendChild(item);
+  }
+  document.getElementById('hangar-screen').classList.remove('hidden');
+}
+
+function showShop() {
+  hideAllScreens();
+  document.getElementById('shop-stars').textContent = `⭐ ${totalStars}`;
+  const list = document.getElementById('shop-list');
+  list.innerHTML = '';
+  for (const eq of EQUIPS) {
+    const owned = ownedEquips.includes(eq.id);
+    const item = document.createElement('div');
+    item.className = 'shop-item';
+    item.innerHTML = `
+      <div class="item-info">
+        <div class="item-name">${eq.name}</div>
+        <div class="item-desc">${eq.desc}</div>
+      </div>
+      ${owned
+        ? `<button class="btn-small selected">✅ 已购</button>`
+        : `<button class="btn-small ${totalStars >= eq.cost ? '' : 'disabled'}" onclick="buyEquip('${eq.id}')">购买 ${eq.cost}⭐</button>`
+      }
+    `;
+    list.appendChild(item);
+  }
+  document.getElementById('shop-screen').classList.remove('hidden');
+}
+
+function buyPlane(id) {
+  const p = PLANES[id];
+  if (!p || ownedPlanes.includes(id) || totalStars < p.cost) return;
+  totalStars -= p.cost;
+  ownedPlanes.push(id);
+  selectedPlane = id;
+  saveProgress();
+  showHangar();
+}
+
+function selectPlane(id) {
+  if (!ownedPlanes.includes(id)) return;
+  selectedPlane = id;
+  saveProgress();
+  showHangar();
+}
+
+function buyEquip(id) {
+  const eq = EQUIPS.find(e => e.id === id);
+  if (!eq || ownedEquips.includes(id) || totalStars < eq.cost) return;
+  totalStars -= eq.cost;
+  ownedEquips.push(id);
+  saveProgress();
+  showShop();
 }
 
 // ============ LEVEL SELECT ============
@@ -1231,12 +1390,6 @@ function showLevelSelect() {
   buildLevelGrid();
 }
 
-function hideAllScreens() {
-  document.getElementById('start-screen').classList.add('hidden');
-  document.getElementById('level-clear').classList.add('hidden');
-  document.getElementById('gameover-screen').classList.add('hidden');
-}
-
 function playLevel(level) {
   initAudio(); currentLevel = level; hideAllScreens();
   document.getElementById('ui').classList.remove('hidden');
@@ -1244,12 +1397,13 @@ function playLevel(level) {
   document.getElementById('boss-name').style.display = 'none';
   targetX = null; targetY = null;
   const cfg = getLevelConfig(level);
+  const player = new Player();
   game = {
-    player: new Player(), bullets: [], enemyBullets: [], enemies: [], missiles: [],
-    explosions: [], powerups: [],
+    player, bullets: [], enemyBullets: [], enemies: [], missiles: [],
+    explosions: [], powerups: [], stars: [],
     bgClouds: Array.from({length:5}, () => new BgCloud()),
     rainbow: new Rainbow(),
-    score: 0, lives: 8, frame: 0,
+    score: 0, lives: player.maxPlayerHp, frame: 0,
     spawnTimer: 0, cfg,
     killCount: 0, running: true,
     powerupMsg: '', powerupMsgTimer: 0,
@@ -1259,6 +1413,7 @@ function playLevel(level) {
     boss: null, bossSpawned: false, bossDefeated: false,
     formationTimer: 0, formationWave: 0,
     slowMo: 0, slowMoAccum: 0,
+    starsCollected: 0,
   };
   updateHeartsDisplay(game.lives);
   startBGM(); loop();
@@ -1273,6 +1428,7 @@ function levelCleared() {
   saveProgress();
   document.getElementById('clear-level').textContent = currentLevel;
   document.getElementById('clear-score').textContent = game.score;
+  document.getElementById('clear-stars-collected').textContent = `本关收集 ⭐${game.starsCollected}`;
   document.getElementById('level-clear').classList.remove('hidden');
   document.getElementById('boss-hp-bar').style.display = 'none';
   document.getElementById('boss-name').style.display = 'none';
@@ -1282,9 +1438,20 @@ function levelCleared() {
 }
 
 function gameOver() {
+  // Check revive
+  if (game.player.canRevive) {
+    game.player.canRevive = false;
+    game.lives = 3;
+    game.player.invincible = 120;
+    updateHeartsDisplay(game.lives);
+    game.explosions.push(new Explosion(game.player.x, game.player.y, '#FFD54F', true));
+    return;
+  }
   game.running = false; stopBGM();
+  saveProgress();
   document.getElementById('fail-level').textContent = currentLevel;
   document.getElementById('final-score').textContent = game.score;
+  document.getElementById('fail-stars-collected').textContent = `本关收集 ⭐${game.starsCollected}`;
   document.getElementById('gameover-screen').classList.remove('hidden');
   document.getElementById('boss-hp-bar').style.display = 'none';
   document.getElementById('boss-name').style.display = 'none';
@@ -1299,6 +1466,14 @@ function spawnFormation() {
   g.formationWave++;
 }
 
+// Star spawn helper
+function spawnStars(x, y, count) {
+  if (!game) return;
+  for (let i = 0; i < count; i++) {
+    game.stars.push(new StarCollectible(x, y));
+  }
+}
+
 // ============ MAIN LOOP ============
 function loop() {
   if (!game || !game.running) return;
@@ -1309,22 +1484,16 @@ function loop() {
   const theme = g.cfg.theme;
   const time = g.frame;
 
-  // Screen shake offset
   if (g.screenShake > 0) { g.screenShake--; g.shakeX = (Math.random()-0.5)*6; g.shakeY = (Math.random()-0.5)*6; } else { g.shakeX = 0; g.shakeY = 0; }
 
   ctx.save();
   ctx.translate(g.shakeX, g.shakeY);
 
-  // Background
   drawGradientBg(theme);
 
-  // Clouds
   g.bgClouds.forEach(c => { c.update(); c.draw(); });
-
-  // Rainbow (occasional)
   g.rainbow.update(); g.rainbow.draw();
 
-  // Level announcement
   if (g.levelAnnounce > 0) {
     g.levelAnnounce--;
     if (g.levelAnnounce > 30 || Math.floor(g.levelAnnounce/4)%2) {
@@ -1334,7 +1503,8 @@ function loop() {
   }
 
   // Player movement
-  const moveSpeed = g.player.speedBoost > 0 ? 0.2 : 0.15;
+  const baseMoveSpeed = g.player.speedBoost > 0 ? 0.2 : 0.15;
+  const moveSpeed = baseMoveSpeed * g.player.speedMod;
   if (targetX !== null) { g.player.x += (targetX - g.player.x) * moveSpeed; g.player.y += (targetY - g.player.y) * moveSpeed; }
   g.player.x = Math.max(30, Math.min(W-30, g.player.x));
   g.player.y = Math.max(30, Math.min(H-30, g.player.y));
@@ -1376,6 +1546,7 @@ function loop() {
   }
 
   // Update missiles
+  const bulletDamage = g.player.bulletDamage;
   g.missiles = g.missiles.filter(m => {
     m.update(g.enemies, g.boss);
     if (m.life<=0||m.x<-30||m.x>W+30||m.y<-30||m.y>H+30) return false;
@@ -1398,13 +1569,13 @@ function loop() {
   // Player bullets vs enemies & boss
   g.bullets = g.bullets.filter(b => {
     if (g.boss && g.boss.alive && g.boss.entered && Math.abs(b.x-g.boss.x)<(g.boss.w+b.r*2)/2 && Math.abs(b.y-g.boss.y)<(g.boss.h+b.r*2)/2) {
-      if (g.boss.takeDamage(1)) handleBossDeath(); else g.explosions.push(new Explosion(b.x, b.y, '#FFE082'));
+      if (g.boss.takeDamage(bulletDamage)) handleBossDeath(); else g.explosions.push(new Explosion(b.x, b.y, '#FFE082'));
       return false;
     }
     for (let i = g.enemies.length-1; i >= 0; i--) {
       const e = g.enemies[i];
       if (Math.abs(b.x-e.x)<(e.w+b.r*2)/2 && Math.abs(b.y-e.y)<(e.h+b.r*2)/2) {
-        e.hp--; e.hitFlash = 3;
+        e.hp -= bulletDamage; e.hitFlash = 3;
         if (e.hp <= 0) handleEnemyKill(e, i); else g.explosions.push(new Explosion(b.x, b.y, '#FFE082'));
         return false;
       }
@@ -1446,39 +1617,45 @@ function loop() {
     if (p.y > H+20) return false;
     if (collides(g.player, p)) {
       const result = p.apply(g.player);
-      if (result === 'life') { g.lives = Math.min(g.lives+1, 10); updateHeartsDisplay(g.lives); }
+      if (result === 'life') { g.lives = Math.min(g.lives+1, g.player.maxPlayerHp + 2); updateHeartsDisplay(g.lives); }
       g.powerupMsg = typeof result==='string' && result!=='life' ? result : '❤️+1';
       g.powerupMsgTimer = 60; return false;
     }
     return true;
   });
 
+  // Update stars
+  g.stars.forEach(s => s.update(g.player.x, g.player.y));
+  g.stars = g.stars.filter(s => {
+    if (s.y > H + 30) return false;
+    if (s.collected) {
+      totalStars++;
+      g.starsCollected++;
+      sfxStarPickup();
+      saveProgress();
+      return false;
+    }
+    return true;
+  });
+
   // ====== DRAW ALL ======
-  // Enemy bullets
   g.enemyBullets.forEach(b => drawEnemyBullet(b.x, b.y, b.r || 4, b.boss));
-  // Player bullets (star trail)
   g.bullets.forEach(b => drawPlayerBullet(b.x, b.y, time));
-  // Enemies
   g.enemies.forEach(e => e.draw(time));
-  // Boss
   if (g.boss) g.boss.draw(time);
-  // Missiles
   g.missiles.forEach(m => m.draw());
-  // Powerups
   g.powerups.forEach(p => p.draw());
-  // Player
+  g.stars.forEach(s => s.draw(time));
   g.player.draw(time);
-  // Explosions
   g.explosions.forEach(e => { e.update(); e.draw(); });
   g.explosions = g.explosions.filter(e => !e.done);
 
-  // Powerup message (bubble)
+  // Powerup message
   if (g.powerupMsgTimer > 0) {
     g.powerupMsgTimer--;
     const msgY = H/2 - 30 - (60 - g.powerupMsgTimer) * 0.5;
     const alpha = Math.min(1, g.powerupMsgTimer / 20);
     ctx.globalAlpha = alpha;
-    // Bubble background
     ctx.beginPath();
     const tw = ctx.measureText(g.powerupMsg).width + 30;
     ctx.roundRect(W/2 - tw/2, msgY - 16, tw, 32, 16);
@@ -1503,6 +1680,7 @@ function loop() {
 
   // UI
   document.getElementById('score').textContent = g.score;
+  document.getElementById('ui-stars').textContent = `⭐${totalStars}`;
   const pd = document.getElementById('ui-center');
   const parts = [`LV${g.cfg.level}`];
   if (g.player.bulletLevel>=2) parts.push('W');
@@ -1528,7 +1706,15 @@ function handleEnemyKill(e, idx) {
   sfxExplosion(isBig);
   g.screenShake = isBig ? 4 : 1;
   if (isBig) g.slowMo = 3;
-  if (Math.random() < (isBig ? 0.25 : 0.12)) g.powerups.push(new PowerUp(e.x, e.y));
+
+  // Drop rate with lucky equip
+  const dropMult = hasEquip('lucky') ? 2 : 1;
+  if (Math.random() < (isBig ? 0.25 : 0.12) * dropMult) g.powerups.push(new PowerUp(e.x, e.y));
+
+  // Spawn stars based on enemy type
+  const starCounts = { 0: 1, 1: 3, 2: 3, 3: 2 };
+  spawnStars(e.x, e.y, starCounts[e.type] || 1);
+
   if (idx >= 0) g.enemies.splice(idx, 1);
 }
 
@@ -1541,10 +1727,13 @@ function handleBossDeath() {
   g.screenShake = 15; g.slowMo = 8;
   triggerScreenFlash(); sfxBossDeath();
   g.enemyBullets = [];
+  // Boss drops 10 stars
+  spawnStars(g.boss.x, g.boss.y, 10);
   setTimeout(() => { if (game === g) levelCleared(); }, 1500);
 }
 
-buildLevelGrid();
+// Show main menu on load
+showMainMenu();
 </script>
 </body>
 </html>
