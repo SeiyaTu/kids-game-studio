@@ -1065,11 +1065,7 @@ class ComboSystem {
   getMultiplier() { return this.count >= 2 ? this.count : 1; }
   draw() {
     const el = document.getElementById('combo-display'), glow = document.getElementById('combo-glow');
-    if (this.count >= 2) { el.textContent = `⭐x${this.count}`; el.className = 'active';
-      glow.style.opacity = Math.min(0.3, this.count * 0.05);
-      glow.style.boxShadow = this.count >= 5 ? 'inset 0 0 80px 30px #FFB74D' : this.count >= 3 ? 'inset 0 0 60px 20px #FFD700' : 'inset 0 0 40px 15px #FFE082';
-    } else if (this.breakTimer > 0) { el.textContent = 'BREAK!'; el.className = 'active break'; glow.style.opacity = 0;
-    } else { el.className = ''; glow.style.opacity = 0; }
+    el.className = ''; glow.style.opacity = 0;
   }
 }
 
