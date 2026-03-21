@@ -1130,6 +1130,74 @@ class Decoy {
 }
 
 // ============ BLACKHOLE ============
+
+// ============ BOUNCE BALL ============
+class BounceBall {
+  constructor(x, y) {
+    this.x = x; this.y = y;
+    this.r = 10; this.life = 600; // 10 seconds
+    this.damage = 2;
+    const angle = Math.random() * Math.PI * 2;
+    this.speed = 7;
+    this.vx = Math.cos(angle) * this.speed;
+    this.vy = Math.sin(angle) * this.speed;
+    this.trail = [];
+  }
+  update(enemies, boss, smf) {
+    this.x += this.vx * smf; this.y += this.vy * smf;
+    this.life--;
+    // Bounce off walls
+    if (this.x - this.r < 0) { this.x = this.r; this.vx = Math.abs(this.vx); }
+    if (this.x + this.r > W) { this.x = W - this.r; this.vx = -Math.abs(this.vx); }
+    if (this.y - this.r < 0) { this.y = this.r; this.vy = Math.abs(this.vy); }
+    if (this.y + this.r > H) { this.y = H - this.r; this.vy = -Math.abs(this.vy); }
+    // Trail
+    this.trail.push({x:this.x, y:this.y});
+    if (this.trail.length > 12) this.trail.shift();
+    // Hit enemies
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const e = enemies[i];
+      const dx = this.x - e.x, dy = this.y - e.y;
+      if (Math.sqrt(dx*dx+dy*dy) < this.r + (e.w||20)/2) {
+        e.hp -= this.damage;
+        if (e.hp <= 0) return {killed: i};
+      }
+    }
+    // Hit boss
+    if (boss && boss.alive && boss.entered) {
+      const dx = this.x - boss.x, dy = this.y - boss.y;
+      if (Math.sqrt(dx*dx+dy*dy) < this.r + 40) {
+        boss.hp -= this.damage * 0.5;
+        boss.hitFlash = 2;
+        if (boss.hp <= 0) { boss.hp = 0; boss.alive = false; return 'boss_dead'; }
+      }
+    }
+    return null;
+  }
+  draw(time) {
+    // Trail
+    this.trail.forEach((p, i) => {
+      const a = i / this.trail.length * 0.4;
+      ctx.globalAlpha = a;
+      drawCircle(p.x, p.y, this.r * (i/this.trail.length), '#FF5252');
+      ctx.globalAlpha = 1;
+    });
+    // Ball
+    const grd = ctx.createRadialGradient(this.x-3, this.y-3, 2, this.x, this.y, this.r);
+    grd.addColorStop(0, '#FF8A80'); grd.addColorStop(0.6, '#FF1744'); grd.addColorStop(1, '#B71C1C');
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+    ctx.fillStyle = grd; ctx.fill();
+    // Shine
+    ctx.beginPath(); ctx.arc(this.x-3, this.y-3, 3, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fill();
+    // Timer ring
+    const pct = this.life / 600;
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.r+3, -Math.PI/2, -Math.PI/2 + Math.PI*2*pct);
+    ctx.strokeStyle = `rgba(255,100,100,${0.5+pct*0.5})`; ctx.lineWidth = 2; ctx.stroke();
+  }
+  get done() { return this.life <= 0; }
+}
+
 class BlackHole {
   constructor(x, y) {
     this.x = x; this.y = y;
@@ -1380,6 +1448,18 @@ canvas.addEventListener('touchstart', e => {
         return;
       }
     }
+    // Check bounce ball button click
+    if(game.showBlackholeBtn && game.bounceBallReady && !game.bounceBall){
+      const dx=tx-game.bounceBallBtnX, dy=ty-game.bounceBallBtnY;
+      if(Math.sqrt(dx*dx+dy*dy)<30){
+        game.bounceBall=new BounceBall(game.player.x, game.player.y-30);
+        game.bounceBallReady=false;
+        game.bounceBallCooldown=0;
+        game.showBlackholeBtn=false;
+        game.slowMotion=false;
+        return;
+      }
+    }
     targetX=tx;targetY=ty;
     game.slowMotion=false;game.showBlackholeBtn=false;
   }
@@ -1395,6 +1475,17 @@ canvas.addEventListener('mousedown', e => {
       game.blackhole=new BlackHole(game.player.x, game.player.y-30);
       game.blackholeReady=false;
       game.blackholeCooldown=0;
+      game.showBlackholeBtn=false;
+      game.slowMotion=false;
+      return;
+    }
+  }
+  if(game&&game.running&&game.showBlackholeBtn&&game.bounceBallReady&&!game.bounceBall){
+    const dx=e.clientX-game.bounceBallBtnX, dy=e.clientY-game.bounceBallBtnY;
+    if(Math.sqrt(dx*dx+dy*dy)<30){
+      game.bounceBall=new BounceBall(game.player.x, game.player.y-30);
+      game.bounceBallReady=false;
+      game.bounceBallCooldown=0;
       game.showBlackholeBtn=false;
       game.slowMotion=false;
       return;
@@ -1581,6 +1672,11 @@ function playLevel(level) {
     blackholeBtnX: 0,
     blackholeBtnY: 0,
     decoys: [],
+    bounceBallReady: true,
+    bounceBallCooldown: 0,
+    bounceBall: null,
+    bounceBallBtnX: 0,
+    bounceBallBtnY: 0,
   };
   updateHeartsDisplay(game.lives);
   startBGM(); loop();
@@ -1852,11 +1948,37 @@ function loop() {
     if (g.blackholeCooldown >= 1800) { g.blackholeReady = true; g.blackholeCooldown = 0; }
   }
 
+  // Bounce ball cooldown
+  if (!g.bounceBallReady && !g.bounceBall) {
+    g.bounceBallCooldown++;
+    if (g.bounceBallCooldown >= 1800) { g.bounceBallReady = true; g.bounceBallCooldown = 0; }
+  }
+
   // Update blackhole
   if (g.blackhole) {
     const bhResult = g.blackhole.update(g.enemies, g.boss, g);
     if (bhResult === 'boss_dead') handleBossDeath();
     if (g.blackhole.done) g.blackhole = null;
+  }
+
+  // Update bounce ball
+  if (g.bounceBall) {
+    const bbResult = g.bounceBall.update(g.enemies, g.boss, smf);
+    if (bbResult && typeof bbResult === 'object' && 'killed' in bbResult) {
+      const e = g.enemies[bbResult.killed];
+      if (e) {
+        g.combo.registerKill();
+        g.score += e.score * g.combo.getMultiplier();
+        g.killCount++;
+        g.explosions.push(new Explosion(e.x, e.y, '#FF5252', e.type >= 1));
+        sfxExplosion(e.type >= 1);
+        const starCounts = {0:1,1:3,2:3,3:2};
+        spawnStars(e.x, e.y, starCounts[e.type]||1);
+        g.enemies.splice(bbResult.killed, 1);
+      }
+    }
+    if (bbResult === 'boss_dead') handleBossDeath();
+    if (g.bounceBall.done) g.bounceBall = null;
   }
 
   // ====== DRAW ALL ======
@@ -1872,6 +1994,9 @@ function loop() {
 
   // Draw blackhole
   if (g.blackhole) g.blackhole.draw(time);
+
+  // Draw bounce ball
+  if (g.bounceBall) g.bounceBall.draw(time);
 
   // Draw blackhole button
   if (g.showBlackholeBtn && g.blackholeReady && !g.blackhole) {
@@ -1898,6 +2023,27 @@ function loop() {
     }
     ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2);
     ctx.fillStyle = '#000'; ctx.fill();
+    ctx.restore();
+  }
+
+  // Draw bounce ball button (left side of player)
+  if (g.showBlackholeBtn && g.bounceBallReady && !g.bounceBall) {
+    const bbX = g.player.x - 60, bbY = g.player.y - 40;
+    g.bounceBallBtnX = bbX; g.bounceBallBtnY = bbY;
+    const pulse = 1 + Math.sin(time * 0.18) * 0.1;
+    ctx.save();
+    ctx.translate(bbX, bbY);
+    ctx.scale(pulse, pulse);
+    ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(120,0,0,0.8)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,100,100,0.8)'; ctx.lineWidth = 3; ctx.stroke();
+    // Red ball icon
+    const grd = ctx.createRadialGradient(-3, -3, 2, 0, 0, 12);
+    grd.addColorStop(0, '#FF8A80'); grd.addColorStop(0.6, '#FF1744'); grd.addColorStop(1, '#B71C1C');
+    ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2);
+    ctx.fillStyle = grd; ctx.fill();
+    ctx.beginPath(); ctx.arc(-3, -3, 3, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fill();
     ctx.restore();
   }
 
@@ -1980,6 +2126,22 @@ function loop() {
     ctx.fillStyle = 'rgba(180,100,255,0.6)'; ctx.fill();
     const secs = Math.ceil((1800 - g.blackholeCooldown) / 60);
     drawText(`${secs}`, bhUIx, bhUIy, '#fff', 11);
+  }
+
+  // Bounce ball UI indicator
+  const bbUIx = 100, bbUIy = H - 40;
+  if (g.bounceBallReady) {
+    drawCircle(bbUIx, bbUIy, 10, '#FF1744');
+    drawCircle(bbUIx-2, bbUIy-2, 3, 'rgba(255,255,255,0.5)');
+  } else if (!g.bounceBall) {
+    ctx.beginPath(); ctx.arc(bbUIx, bbUIy, 14, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(100,100,100,0.4)'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(bbUIx, bbUIy);
+    ctx.arc(bbUIx, bbUIy, 14, -Math.PI / 2, -Math.PI / 2 + (g.bounceBallCooldown / 1800) * Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,50,50,0.6)'; ctx.fill();
+    const secs = Math.ceil((1800 - g.bounceBallCooldown) / 60);
+    drawText(`${secs}`, bbUIx, bbUIy, '#fff', 11);
   }
 
   ctx.restore();
