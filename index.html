@@ -6,41 +6,47 @@
 <title>✈️ 像素飞机大作战</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #000; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; }
+body { background: #87CEEB; overflow: hidden; touch-action: none; font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif; }
 canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
 #ui {
   position: absolute; top: 0; left: 0; width: 100%;
-  padding: 10px 15px; display: flex; justify-content: space-between; align-items: center;
-  color: #fff; font-size: 16px; font-weight: bold;
-  font-family: 'Courier New', monospace;
+  padding: 12px 15px; display: flex; justify-content: space-between; align-items: center;
+  color: #fff; font-size: 18px; font-weight: bold;
+  font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.4);
   pointer-events: none; z-index: 10;
 }
-#ui-center { font-size: 13px; color: #ff0; }
+#ui-center { font-size: 14px; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
 #combo-display {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%,-60%);
-  font-size: 48px; font-weight: bold; color: #ff0; text-shadow: 3px 3px #f80;
-  font-family: 'Courier New', monospace; pointer-events: none; z-index: 15;
+  font-size: 52px; font-weight: bold; color: #FFD700; text-shadow: 3px 3px #FF8C00;
+  font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif;
+  pointer-events: none; z-index: 15;
   opacity: 0; transition: opacity 0.15s;
 }
 #combo-display.active { opacity: 1; }
-#combo-display.break { color: #f44; text-shadow: 3px 3px #800; font-size: 32px; }
+#combo-display.break { color: #FF6B6B; text-shadow: 3px 3px #CC5555; font-size: 36px; }
 #boss-hp-bar {
-  position: absolute; top: 36px; left: 50%; transform: translateX(-50%);
-  width: 60%; max-width: 300px; height: 10px; background: #222; border: 2px solid #f44;
-  z-index: 15; pointer-events: none; display: none;
+  position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+  width: 60%; max-width: 300px; height: 12px; background: rgba(255,255,255,0.3); border: 2px solid #FF7043; border-radius: 6px;
+  z-index: 15; pointer-events: none; display: none; overflow: hidden;
 }
-#boss-hp-fill { width: 100%; height: 100%; background: #f44; transition: width 0.2s; }
+#boss-hp-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #FF7043, #FFAB91); transition: width 0.2s; border-radius: 4px; }
 #boss-name {
-  position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
-  color: #f44; font-size: 12px; font-family: 'Courier New', monospace;
+  position: absolute; top: 24px; left: 50%; transform: translateX(-50%);
+  color: #FF7043; font-size: 14px; font-weight: bold;
+  font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
   z-index: 15; pointer-events: none; display: none;
 }
 #sound-toggle {
   position: absolute; top: 10px; right: 60px; z-index: 25;
-  background: none; border: 2px solid #0f0; color: #0f0; font-size: 18px;
-  width: 32px; height: 32px; cursor: pointer; font-family: 'Courier New', monospace;
+  background: rgba(255,255,255,0.3); border: 2px solid #fff; color: #fff;
+  font-size: 18px; width: 36px; height: 36px; cursor: pointer; border-radius: 18px;
+  font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
-#sound-toggle.muted { border-color: #333; color: #333; }
+#sound-toggle.muted { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.3); }
 #screen-flash {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   background: #fff; opacity: 0; pointer-events: none; z-index: 12;
@@ -49,52 +55,57 @@ canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edge
 #combo-glow {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none; z-index: 11; opacity: 0;
-  box-shadow: inset 0 0 60px 20px #ff0;
+  box-shadow: inset 0 0 60px 20px #FFD700;
   transition: opacity 0.3s;
 }
 .overlay {
   position: absolute; top: 0; left: 0; width: 100%; height: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: #fff; z-index: 20; background: rgba(0,0,0,0.92);
-  font-family: 'Courier New', monospace;
+  color: #fff; z-index: 20;
+  background: linear-gradient(180deg, rgba(100,149,237,0.95) 0%, rgba(147,112,219,0.95) 100%);
+  font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif;
 }
-.overlay h1 { font-size: 32px; margin-bottom: 10px; color: #0f0; text-shadow: 2px 2px #030; letter-spacing: 3px; }
-.overlay p { font-size: 14px; color: #8f8; margin-bottom: 15px; }
-.overlay .score { font-size: 22px; margin-bottom: 20px; color: #0ff; }
+.overlay h1 { font-size: 36px; margin-bottom: 12px; color: #fff; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); letter-spacing: 3px; }
+.overlay p { font-size: 16px; color: rgba(255,255,255,0.85); margin-bottom: 15px; }
+.overlay .score { font-size: 24px; margin-bottom: 20px; color: #FFD700; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
 .btn {
-  padding: 12px 32px; font-size: 16px; border: 3px solid #0f0;
-  background: #020; color: #0f0; font-family: 'Courier New', monospace;
+  padding: 14px 36px; font-size: 18px; border: 3px solid #fff;
+  background: rgba(255,255,255,0.2); color: #fff;
+  font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif;
   cursor: pointer; transition: all 0.2s; margin: 5px; letter-spacing: 1px;
+  border-radius: 25px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 }
-.btn:hover, .btn:active { background: #0f0; color: #000; }
-.btn.locked { border-color: #333; color: #333; pointer-events: none; background: #111; }
+.btn:hover, .btn:active { background: rgba(255,255,255,0.4); transform: scale(1.05); }
+.btn.locked { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.3); pointer-events: none; background: rgba(0,0,0,0.1); }
 .hidden { display: none !important; }
-.level-grid { display: flex; flex-wrap: wrap; justify-content: center; max-width: 340px; gap: 8px; margin: 15px 0; }
+.level-grid { display: flex; flex-wrap: wrap; justify-content: center; max-width: 360px; gap: 10px; margin: 15px 0; }
 .level-btn {
-  width: 56px; height: 56px; border: 3px solid #0f0; background: #020;
-  color: #0f0; font-size: 20px; font-weight: bold; font-family: 'Courier New', monospace;
+  width: 60px; height: 60px; border: 3px solid #fff; background: rgba(255,255,255,0.2);
+  color: #fff; font-size: 22px; font-weight: bold;
+  font-family: 'Arial Rounded MT Bold', 'Nunito', Arial, sans-serif;
   cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.2s; border-radius: 15px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 }
-.level-btn span { font-size: 10px; margin-top: 2px; }
-.level-btn:hover { background: #040; }
-.level-btn.locked { border-color: #222; color: #333; background: #111; cursor: not-allowed; }
-.level-btn.cleared { border-color: #ff0; color: #ff0; background: #220; }
-.level-btn.cleared span { color: #ff0; }
+.level-btn span { font-size: 12px; margin-top: 2px; }
+.level-btn:hover { background: rgba(255,255,255,0.35); transform: scale(1.05); }
+.level-btn.locked { border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.25); background: rgba(0,0,0,0.1); cursor: not-allowed; }
+.level-btn.cleared { border-color: #FFD700; color: #FFD700; background: rgba(255,215,0,0.2); }
+.level-btn.cleared span { color: #FFD700; }
 </style>
 </head>
 <body>
 
 <div id="start-screen" class="overlay">
-  <h1>[ 像素飞机大作战 ]</h1>
+  <h1>✈️ 飞机大作战</h1>
   <p>== PIXEL SHOOTER ==</p>
-  <p style="font-size:12px;color:#484;">触屏拖动 / 鼠标控制 · 自动射击 · 导弹追踪</p>
+  <p style="font-size:13px;color:rgba(255,255,255,0.7);">触屏拖动 / 鼠标控制 · 自动射击 · 导弹追踪</p>
   <div class="level-grid" id="level-grid"></div>
-  <p id="level-hint" style="font-size:12px;color:#484;margin-top:5px;"></p>
+  <p id="level-hint" style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:5px;"></p>
 </div>
 
 <div id="level-clear" class="overlay hidden">
-  <h1>[ STAGE CLEAR ]</h1>
+  <h1>🎉 STAGE CLEAR 🎉</h1>
   <div class="score">第 <span id="clear-level">1</span> 关 · 得分：<span id="clear-score">0</span></div>
   <div style="display:flex;gap:10px;">
     <button class="btn" onclick="showLevelSelect()">选关</button>
@@ -103,18 +114,18 @@ canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edge
 </div>
 
 <div id="gameover-screen" class="overlay hidden">
-  <h1>[ GAME OVER ]</h1>
+  <h1>💫 GAME OVER</h1>
   <div class="score">第 <span id="fail-level">1</span> 关 · 得分：<span id="final-score">0</span></div>
   <div style="display:flex;gap:10px;">
     <button class="btn" onclick="showLevelSelect()">选关</button>
-    <button class="btn" onclick="playLevel(currentLevel)">重试</button>
+    <button class="btn" onclick="playLevel(currentLevel)">再来一次!</button>
   </div>
 </div>
 
 <div id="ui" class="hidden">
-  <div>HP:<span id="lives">4</span></div>
+  <div id="lives-display"></div>
   <div id="ui-center"></div>
-  <div>SC:<span id="score">0</span></div>
+  <div>✨<span id="score">0</span></div>
 </div>
 
 <div id="combo-display"></div>
@@ -128,7 +139,7 @@ canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edge
 
 <script>
 // ============ PIXEL RENDERING ============
-const PIXEL_SCALE = 3;
+const PIXEL_SCALE = 2;
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
@@ -160,6 +171,11 @@ function pxRect(x, y, w, h, color) {
 function pxDot(x, y, color) {
   offCtx.fillStyle = color;
   offCtx.fillRect(Math.floor(x), Math.floor(y), 1, 1);
+}
+// Draw a 2x2 "fat pixel" for bigger sprites
+function pxDot2(x, y, color) {
+  offCtx.fillStyle = color;
+  offCtx.fillRect(Math.floor(x), Math.floor(y), 2, 2);
 }
 
 // ============ AUDIO SYSTEM (Web Audio API) ============
@@ -215,7 +231,6 @@ function sfxExplosion(big) {
   gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
   osc.connect(gain); gain.connect(masterGain);
   osc.start(); osc.stop(audioCtx.currentTime + dur);
-  // noise burst
   const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
   const data = buf.getChannelData(0);
   for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / data.length * 4);
@@ -239,7 +254,7 @@ function sfxBossDeath() {
   for (let i = 0; i < 8; i++) setTimeout(() => sfxExplosion(true), i * 100);
 }
 
-// BGM - simple chiptune loop
+// BGM
 let bgmInterval = null;
 function startBGM() {
   if (!audioCtx || !soundEnabled || bgmPlaying) return;
@@ -258,102 +273,107 @@ function stopBGM() {
   if (bgmInterval) { clearInterval(bgmInterval); bgmInterval = null; }
 }
 
-// ============ PIXEL SPRITE DATA ============
+// ============ PIXEL SPRITE DATA (enlarged ~1.5x with 2x2 dots) ============
+// We use drawSprite2x which draws each pixel as 2x2 for bigger, clearer characters
 const SPRITES = {
   player: [
-    [0,0,0,0,'#4cf',0,0,0,0],
-    [0,0,0,'#4cf','#fff','#4cf',0,0,0],
-    [0,0,'#4cf','#4cf','#fff','#4cf','#4cf',0,0],
-    [0,'#08f','#4cf','#4cf','#4cf','#4cf','#4cf','#08f',0],
-    ['#08f','#08f','#08f','#4cf','#4cf','#4cf','#08f','#08f','#08f'],
-    [0,'#08f',0,'#4cf','#4cf','#4cf',0,'#08f',0],
-    [0,0,0,'#06a','#4cf','#06a',0,0,0],
-    [0,0,0,0,'#f80',0,0,0,0],
-    [0,0,0,0,'#ff0',0,0,0,0],
+    [0,0,0,0,'#64D2FF',0,0,0,0],
+    [0,0,0,'#64D2FF','#fff','#64D2FF',0,0,0],
+    [0,0,'#64D2FF','#64D2FF','#fff','#64D2FF','#64D2FF',0,0],
+    [0,'#42A5F5','#64D2FF','#64D2FF','#64D2FF','#64D2FF','#64D2FF','#42A5F5',0],
+    ['#42A5F5','#42A5F5','#42A5F5','#64D2FF','#64D2FF','#64D2FF','#42A5F5','#42A5F5','#42A5F5'],
+    [0,'#42A5F5',0,'#64D2FF','#64D2FF','#64D2FF',0,'#42A5F5',0],
+    [0,0,0,'#2979B0','#64D2FF','#2979B0',0,0,0],
+    [0,0,0,0,'#FFB74D',0,0,0,0],
+    [0,0,0,0,'#FFE082',0,0,0,0],
   ],
   enemy_small: [
-    [0,0,'#f44','#f44','#f44',0,0],
-    [0,'#f44','#c22','#f44','#c22','#f44',0],
-    ['#f44','#f44','#f44','#c22','#f44','#f44','#f44'],
-    [0,'#c22',0,'#f44',0,'#c22',0],
-    [0,0,0,'#f80',0,0,0],
+    [0,0,'#FF9800','#FF9800','#FF9800',0,0],
+    [0,'#FF9800','#F57C00','#FF9800','#F57C00','#FF9800',0],
+    ['#FF9800','#FF9800','#FF9800','#F57C00','#FF9800','#FF9800','#FF9800'],
+    [0,'#F57C00',0,'#FF9800',0,'#F57C00',0],
+    [0,0,0,'#FFB74D',0,0,0],
   ],
   enemy_big: [
-    [0,0,0,'#888','#888','#888',0,0,0],
-    [0,0,'#888','#aaa','#fff','#aaa','#888',0,0],
-    [0,'#666','#888','#aaa','#aaa','#aaa','#888','#666',0],
-    ['#666','#666','#888','#888','#888','#888','#888','#666','#666'],
-    ['#555','#666','#666','#888','#f80','#888','#666','#666','#555'],
-    [0,'#555',0,'#666','#888','#666',0,'#555',0],
-    [0,0,0,'#f60',0,'#f60',0,0,0],
+    [0,0,0,'#B39DDB','#B39DDB','#B39DDB',0,0,0],
+    [0,0,'#B39DDB','#CE93D8','#fff','#CE93D8','#B39DDB',0,0],
+    [0,'#9575CD','#B39DDB','#CE93D8','#CE93D8','#CE93D8','#B39DDB','#9575CD',0],
+    ['#9575CD','#9575CD','#B39DDB','#B39DDB','#B39DDB','#B39DDB','#B39DDB','#9575CD','#9575CD'],
+    ['#7E57C2','#9575CD','#9575CD','#B39DDB','#FFB74D','#B39DDB','#9575CD','#9575CD','#7E57C2'],
+    [0,'#7E57C2',0,'#9575CD','#B39DDB','#9575CD',0,'#7E57C2',0],
+    [0,0,0,'#FFB74D',0,'#FFB74D',0,0,0],
   ],
   tank: [
-    [0,0,0,0,'#4a5','#4a5',0,0,0,0],
-    [0,0,0,0,'#4a5','#4a5',0,0,0,0],
-    [0,0,0,'#5b6','#5b6','#5b6','#5b6',0,0,0],
-    [0,'#363','#4a5','#5b6','#7d7','#5b6','#4a5','#363',0,0],
-    ['#2a3','#363','#4a5','#4a5','#4a5','#4a5','#4a5','#363','#2a3',0],
-    ['#2a3','#363','#4a5','#4a5','#4a5','#4a5','#4a5','#363','#2a3',0],
-    [0,'#252','#363','#363','#363','#363','#363','#252',0,0],
+    [0,0,0,0,'#66BB6A','#66BB6A',0,0,0,0],
+    [0,0,0,0,'#66BB6A','#66BB6A',0,0,0,0],
+    [0,0,0,'#81C784','#81C784','#81C784','#81C784',0,0,0],
+    [0,'#4CAF50','#66BB6A','#81C784','#A5D6A7','#81C784','#66BB6A','#4CAF50',0,0],
+    ['#388E3C','#4CAF50','#66BB6A','#66BB6A','#66BB6A','#66BB6A','#66BB6A','#4CAF50','#388E3C',0],
+    ['#388E3C','#4CAF50','#66BB6A','#66BB6A','#66BB6A','#66BB6A','#66BB6A','#4CAF50','#388E3C',0],
+    [0,'#2E7D32','#4CAF50','#4CAF50','#4CAF50','#4CAF50','#4CAF50','#2E7D32',0,0],
   ],
   heli: [
-    [0,'#ddf','#ddf','#ddf','#ddf','#ddf','#ddf','#ddf',0],
-    [0,0,0,0,'#83c',0,0,0,0],
-    [0,0,0,'#a5f','#a5f','#a5f',0,0,0],
-    [0,0,'#a5f','#a5f','#ff0','#a5f','#a5f',0,0],
-    [0,0,0,'#a5f','#a5f','#a5f',0,0,0],
-    [0,'#888',0,0,0,0,0,'#888',0],
-    ['#666',0,0,0,0,0,0,0,'#666'],
+    [0,'#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0',0],
+    [0,0,0,0,'#AB47BC',0,0,0,0],
+    [0,0,0,'#CE93D8','#CE93D8','#CE93D8',0,0,0],
+    [0,0,'#CE93D8','#CE93D8','#FFE082','#CE93D8','#CE93D8',0,0],
+    [0,0,0,'#CE93D8','#CE93D8','#CE93D8',0,0,0],
+    [0,'#BDBDBD',0,0,0,0,0,'#BDBDBD',0],
+    ['#9E9E9E',0,0,0,0,0,0,0,'#9E9E9E'],
   ],
-  // BOSS sprites
   boss1: [
-    [0,0,0,0,0,'#f44','#f44','#f44','#f44','#f44',0,0,0,0,0],
-    [0,0,0,'#f44','#f44','#c22','#c22','#fff','#c22','#c22','#f44','#f44',0,0,0],
-    [0,0,'#f44','#c22','#c22','#c22','#f44','#f44','#f44','#c22','#c22','#c22','#f44',0,0],
-    [0,'#f44','#c22','#c22','#ff0','#c22','#c22','#c22','#c22','#c22','#ff0','#c22','#c22','#f44',0],
-    ['#a00','#f44','#c22','#c22','#c22','#c22','#c22','#f44','#c22','#c22','#c22','#c22','#c22','#f44','#a00'],
-    ['#a00','#a00','#f44','#f44','#c22','#c22','#f44','#f44','#f44','#c22','#c22','#f44','#f44','#a00','#a00'],
-    [0,'#a00','#a00','#f44','#f44','#f44','#c22','#c22','#c22','#f44','#f44','#f44','#a00','#a00',0],
-    [0,0,'#a00',0,'#f44','#f44','#f44','#f44','#f44','#f44','#f44',0,'#a00',0,0],
-    [0,0,0,0,0,'#f80','#f80',0,'#f80','#f80',0,0,0,0,0],
-    [0,0,0,0,0,'#ff0',0,0,0,'#ff0',0,0,0,0,0],
+    [0,0,0,0,0,'#FF7043','#FF7043','#FF7043','#FF7043','#FF7043',0,0,0,0,0],
+    [0,0,0,'#FF7043','#FF7043','#F4511E','#F4511E','#fff','#F4511E','#F4511E','#FF7043','#FF7043',0,0,0],
+    [0,0,'#FF7043','#F4511E','#F4511E','#F4511E','#FF7043','#FF7043','#FF7043','#F4511E','#F4511E','#F4511E','#FF7043',0,0],
+    [0,'#FF7043','#F4511E','#F4511E','#FFE082','#F4511E','#F4511E','#F4511E','#F4511E','#F4511E','#FFE082','#F4511E','#F4511E','#FF7043',0],
+    ['#E64A19','#FF7043','#F4511E','#F4511E','#F4511E','#F4511E','#F4511E','#FF7043','#F4511E','#F4511E','#F4511E','#F4511E','#F4511E','#FF7043','#E64A19'],
+    ['#E64A19','#E64A19','#FF7043','#FF7043','#F4511E','#F4511E','#FF7043','#FF7043','#FF7043','#F4511E','#F4511E','#FF7043','#FF7043','#E64A19','#E64A19'],
+    [0,'#E64A19','#E64A19','#FF7043','#FF7043','#FF7043','#F4511E','#F4511E','#F4511E','#FF7043','#FF7043','#FF7043','#E64A19','#E64A19',0],
+    [0,0,'#E64A19',0,'#FF7043','#FF7043','#FF7043','#FF7043','#FF7043','#FF7043','#FF7043',0,'#E64A19',0,0],
+    [0,0,0,0,0,'#FFB74D','#FFB74D',0,'#FFB74D','#FFB74D',0,0,0,0,0],
+    [0,0,0,0,0,'#FFE082',0,0,0,'#FFE082',0,0,0,0,0],
   ],
   boss2: [
-    [0,0,0,0,'#4a5',0,0,0,0,0,'#4a5',0,0,0,0],
-    [0,0,0,'#4a5','#4a5',0,0,0,0,0,'#4a5','#4a5',0,0,0],
-    [0,0,'#4a5','#4a5','#5b6','#5b6','#5b6','#5b6','#5b6','#5b6','#5b6','#4a5','#4a5',0,0],
-    [0,'#363','#4a5','#5b6','#5b6','#7d7','#5b6','#ff0','#5b6','#7d7','#5b6','#5b6','#4a5','#363',0],
-    ['#363','#363','#4a5','#5b6','#7d7','#7d7','#5b6','#5b6','#5b6','#7d7','#7d7','#5b6','#4a5','#363','#363'],
-    ['#252','#363','#4a5','#4a5','#5b6','#5b6','#5b6','#5b6','#5b6','#5b6','#5b6','#4a5','#4a5','#363','#252'],
-    [0,'#252','#363','#4a5','#4a5','#4a5','#4a5','#4a5','#4a5','#4a5','#4a5','#4a5','#363','#252',0],
-    [0,0,'#252','#363','#363','#363','#363','#363','#363','#363','#363','#363','#252',0,0],
-    [0,0,0,'#252','#252',0,'#f80',0,'#f80',0,'#252','#252',0,0,0],
+    [0,0,0,0,'#66BB6A',0,0,0,0,0,'#66BB6A',0,0,0,0],
+    [0,0,0,'#66BB6A','#66BB6A',0,0,0,0,0,'#66BB6A','#66BB6A',0,0,0],
+    [0,0,'#66BB6A','#66BB6A','#81C784','#81C784','#81C784','#81C784','#81C784','#81C784','#81C784','#66BB6A','#66BB6A',0,0],
+    [0,'#4CAF50','#66BB6A','#81C784','#81C784','#A5D6A7','#81C784','#FFE082','#81C784','#A5D6A7','#81C784','#81C784','#66BB6A','#4CAF50',0],
+    ['#4CAF50','#4CAF50','#66BB6A','#81C784','#A5D6A7','#A5D6A7','#81C784','#81C784','#81C784','#A5D6A7','#A5D6A7','#81C784','#66BB6A','#4CAF50','#4CAF50'],
+    ['#2E7D32','#4CAF50','#66BB6A','#66BB6A','#81C784','#81C784','#81C784','#81C784','#81C784','#81C784','#81C784','#66BB6A','#66BB6A','#4CAF50','#2E7D32'],
+    [0,'#2E7D32','#4CAF50','#66BB6A','#66BB6A','#66BB6A','#66BB6A','#66BB6A','#66BB6A','#66BB6A','#66BB6A','#66BB6A','#4CAF50','#2E7D32',0],
+    [0,0,'#2E7D32','#4CAF50','#4CAF50','#4CAF50','#4CAF50','#4CAF50','#4CAF50','#4CAF50','#4CAF50','#4CAF50','#2E7D32',0,0],
+    [0,0,0,'#2E7D32','#2E7D32',0,'#FFB74D',0,'#FFB74D',0,'#2E7D32','#2E7D32',0,0,0],
   ],
   boss3: [
-    [0,0,0,0,0,'#a5f','#a5f','#a5f','#a5f','#a5f',0,0,0,0,0],
-    [0,0,0,'#a5f','#a5f','#83c','#a5f','#fff','#a5f','#83c','#a5f','#a5f',0,0,0],
-    [0,'#ddf','#ddf','#ddf','#ddf','#ddf','#ddf','#ddf','#ddf','#ddf','#ddf','#ddf','#ddf','#ddf',0],
-    [0,0,'#a5f','#83c','#a5f','#a5f','#ff0','#a5f','#ff0','#a5f','#a5f','#83c','#a5f',0,0],
-    ['#83c','#a5f','#a5f','#a5f','#a5f','#83c','#83c','#83c','#83c','#83c','#a5f','#a5f','#a5f','#a5f','#83c'],
-    [0,'#83c','#a5f','#a5f','#83c','#83c','#a5f','#a5f','#a5f','#83c','#83c','#a5f','#a5f','#83c',0],
-    [0,0,'#83c',0,0,'#a5f','#a5f','#a5f','#a5f','#a5f',0,0,'#83c',0,0],
-    [0,0,0,0,0,'#f80',0,'#f80',0,'#f80',0,0,0,0,0],
-    [0,0,0,0,0,'#ff0',0,'#ff0',0,'#ff0',0,0,0,0,0],
+    [0,0,0,0,0,'#CE93D8','#CE93D8','#CE93D8','#CE93D8','#CE93D8',0,0,0,0,0],
+    [0,0,0,'#CE93D8','#CE93D8','#AB47BC','#CE93D8','#fff','#CE93D8','#AB47BC','#CE93D8','#CE93D8',0,0,0],
+    [0,'#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0','#E0E0E0',0],
+    [0,0,'#CE93D8','#AB47BC','#CE93D8','#CE93D8','#FFE082','#CE93D8','#FFE082','#CE93D8','#CE93D8','#AB47BC','#CE93D8',0,0],
+    ['#AB47BC','#CE93D8','#CE93D8','#CE93D8','#CE93D8','#AB47BC','#AB47BC','#AB47BC','#AB47BC','#AB47BC','#CE93D8','#CE93D8','#CE93D8','#CE93D8','#AB47BC'],
+    [0,'#AB47BC','#CE93D8','#CE93D8','#AB47BC','#AB47BC','#CE93D8','#CE93D8','#CE93D8','#AB47BC','#AB47BC','#CE93D8','#CE93D8','#AB47BC',0],
+    [0,0,'#AB47BC',0,0,'#CE93D8','#CE93D8','#CE93D8','#CE93D8','#CE93D8',0,0,'#AB47BC',0,0],
+    [0,0,0,0,0,'#FFB74D',0,'#FFB74D',0,'#FFB74D',0,0,0,0,0],
+    [0,0,0,0,0,'#FFE082',0,'#FFE082',0,'#FFE082',0,0,0,0,0],
   ],
 };
 
+// Draw sprite with each pixel as 2x2 for bigger characters
 function drawSprite(sprite, cx, cy, flash) {
   const h = sprite.length;
   const w = sprite[0].length;
-  const sx = Math.floor(cx - w/2);
-  const sy = Math.floor(cy - h/2);
+  const sx = Math.floor(cx - w);
+  const sy = Math.floor(cy - h);
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < w; c++) {
       const color = sprite[r][c];
-      if (color) pxDot(sx+c, sy+r, flash || color);
+      if (color) pxDot2(sx+c*2, sy+r*2, flash || color);
     }
   }
 }
+
+// Sprite dimensions in world units (2x pixel size)
+function spriteW(sprite) { return sprite[0].length * 2; }
+function spriteH(sprite) { return sprite.length * 2; }
 
 // ============ SAVE DATA ============
 let maxUnlocked = parseInt(localStorage.getItem('maxUnlocked') || '1');
@@ -365,31 +385,31 @@ function saveProgress() {
   localStorage.setItem('clearedLevels', JSON.stringify(clearedLevels));
 }
 
-// ============ BACKGROUND THEMES ============
+// ============ BACKGROUND THEMES (soft, kid-friendly) ============
 const LEVEL_THEMES = [
-  { bg: '#0a0a18', stars: '#88f', nebula: '#112' },   // 1: deep space blue
-  { bg: '#0a0a18', stars: '#aaf', nebula: '#113' },   // 2
-  { bg: '#100820', stars: '#c8f', nebula: '#201' },   // 3: purple nebula
-  { bg: '#120818', stars: '#f8c', nebula: '#210' },   // 4
-  { bg: '#180808', stars: '#f88', nebula: '#210' },   // 5: red mars
-  { bg: '#081018', stars: '#8ff', nebula: '#012' },   // 6: cyan
-  { bg: '#101008', stars: '#ff8', nebula: '#221' },   // 7: golden
-  { bg: '#180010', stars: '#f4f', nebula: '#200' },   // 8: magenta
-  { bg: '#001010', stars: '#0ff', nebula: '#011' },   // 9: teal
-  { bg: '#100000', stars: '#f44', nebula: '#200' },   // 10: blood red
+  { bg1: '#87CEEB', bg2: '#B3E5FC', stars: '#fff', cloud: 'rgba(255,255,255,0.15)' },   // 1: sunny sky
+  { bg1: '#81D4FA', bg2: '#E1F5FE', stars: '#fff', cloud: 'rgba(255,255,255,0.18)' },   // 2: light blue
+  { bg1: '#CE93D8', bg2: '#E1BEE7', stars: '#FFE0B2', cloud: 'rgba(255,255,255,0.12)' }, // 3: lavender
+  { bg1: '#F48FB1', bg2: '#FCE4EC', stars: '#fff', cloud: 'rgba(255,255,255,0.15)' },   // 4: pink
+  { bg1: '#FFAB91', bg2: '#FBE9E7', stars: '#fff', cloud: 'rgba(255,255,255,0.12)' },   // 5: peach
+  { bg1: '#80DEEA', bg2: '#E0F7FA', stars: '#FFFDE7', cloud: 'rgba(255,255,255,0.15)' }, // 6: cyan
+  { bg1: '#FFE082', bg2: '#FFF8E1', stars: '#fff', cloud: 'rgba(255,255,255,0.18)' },   // 7: golden
+  { bg1: '#B39DDB', bg2: '#EDE7F6', stars: '#FFE0B2', cloud: 'rgba(255,255,255,0.12)' }, // 8: purple
+  { bg1: '#80CBC4', bg2: '#E0F2F1', stars: '#fff', cloud: 'rgba(255,255,255,0.15)' },   // 9: teal
+  { bg1: '#9FA8DA', bg2: '#C5CAE9', stars: '#FFE082', cloud: 'rgba(255,255,255,0.1)' },  // 10: indigo soft
 ];
 
-// ============ LEVEL CONFIG ============
+// ============ LEVEL CONFIG (slowed down ~30%) ============
 function getLevelConfig(level) {
   const L = Math.min(level, 10);
   return {
     level: L,
     enemyHpMult: 0.6 + L * 0.2,
-    enemySpeedMult: 0.5 + L * 0.12,
-    spawnInterval: Math.max(15, 80 - L * 6),
-    extraSpawnChance: Math.min(0.5, Math.max(0, (L - 3) * 0.08)),
-    enemyShootMult: 0.7 + L * 0.12,
-    enemyBulletSpeed: (2.5 + L * 0.4) / PIXEL_SCALE,
+    enemySpeedMult: (0.5 + L * 0.12) * 0.7,  // 30% slower
+    spawnInterval: Math.max(25, 100 - L * 6),  // slower spawning
+    extraSpawnChance: Math.min(0.35, Math.max(0, (L - 3) * 0.06)),  // less extra spawns
+    enemyShootMult: (0.7 + L * 0.12) * 0.7,   // 30% slower shooting
+    enemyBulletSpeed: (2.5 + L * 0.4) / PIXEL_SCALE * 0.7,  // 30% slower bullets
     killsToWin: 10 + L * 5,
     tankMinLevel: 5,
     heliMinLevel: 3,
@@ -406,16 +426,16 @@ class BgCloud {
     this.theme = theme;
     this.x = Math.random() * W;
     this.y = Math.random() * H;
-    this.w = 15 + Math.random() * 25;
-    this.h = 4 + Math.random() * 6;
+    this.w = 20 + Math.random() * 35;
+    this.h = 6 + Math.random() * 8;
     this.speed = 0.05 + Math.random() * 0.1;
-    this.alpha = 0.03 + Math.random() * 0.05;
+    this.alpha = 0.08 + Math.random() * 0.1;
   }
   update() { this.y += this.speed; if (this.y > H + 10) { this.y = -this.h; this.x = Math.random() * W; } }
   draw() {
     offCtx.globalAlpha = this.alpha;
-    pxRect(this.x, this.y, this.w, this.h, this.theme.nebula);
-    pxRect(this.x + 2, this.y + 1, this.w - 4, this.h - 2, this.theme.nebula);
+    pxRect(this.x, this.y, this.w, this.h, this.theme.cloud || 'rgba(255,255,255,0.15)');
+    pxRect(this.x + 3, this.y + 1, this.w - 6, this.h - 2, this.theme.cloud || 'rgba(255,255,255,0.15)');
     offCtx.globalAlpha = 1;
   }
 }
@@ -425,14 +445,14 @@ class Star {
   constructor(theme) { this.theme = theme; this.reset(); this.y = Math.random() * H; }
   reset() { this.x = Math.floor(Math.random() * W); this.y = -1; this.speed = 0.3 + Math.random(); this.bright = Math.random() > 0.5; }
   update() { this.y += this.speed; if (this.y > H) this.reset(); }
-  draw() { pxDot(this.x, this.y, this.bright ? (this.theme ? this.theme.stars : '#fff') : '#555'); }
+  draw() { pxDot(this.x, this.y, this.bright ? (this.theme ? this.theme.stars : '#fff') : 'rgba(255,255,255,0.4)'); }
 }
 
 // ============ PLAYER ============
 class Player {
   constructor() {
-    this.w = 9; this.h = 9;
-    this.x = W / 2; this.y = H - 30;
+    this.w = 18; this.h = 18;  // 2x sprite size
+    this.x = W / 2; this.y = H - 40;
     this.shootTimer = 0; this.shootInterval = 14;
     this.bulletLevel = 1;
     this.shield = 0; this.speedBoost = 0; this.invincible = 0;
@@ -442,16 +462,17 @@ class Player {
   draw() {
     if (this.invincible > 0 && Math.floor(this.invincible/4) % 2) return;
     const flame = SPRITES.player.map(r => [...r]);
-    if (Math.random() > 0.5) { flame[7][4] = '#ff0'; flame[8][4] = '#f80'; }
-    else { flame[7][4] = '#f60'; flame[8][4] = '#ff0'; }
+    if (Math.random() > 0.5) { flame[7][4] = '#FFE082'; flame[8][4] = '#FFB74D'; }
+    else { flame[7][4] = '#FFAB40'; flame[8][4] = '#FFE082'; }
     drawSprite(flame, this.x, this.y);
     if (this.shield > 0) {
       const blink = Math.floor(Date.now()/200) % 2;
-      const c = blink ? '#0ff' : '#0aa';
-      pxRect(this.x-6, this.y-6, 12, 1, c);
-      pxRect(this.x-6, this.y+5, 12, 1, c);
-      pxRect(this.x-6, this.y-6, 1, 12, c);
-      pxRect(this.x+5, this.y-6, 1, 12, c);
+      const c = blink ? '#64FFDA' : '#26A69A';
+      const sw = this.w/2 + 4, sh = this.h/2 + 4;
+      pxRect(this.x-sw, this.y-sh, sw*2, 2, c);
+      pxRect(this.x-sw, this.y+sh-2, sw*2, 2, c);
+      pxRect(this.x-sw, this.y-sh, 2, sh*2, c);
+      pxRect(this.x+sw-2, this.y-sh, 2, sh*2, c);
     }
   }
   shoot(bullets) {
@@ -463,15 +484,16 @@ class Player {
     if (this.shootTimer < interval) return;
     this.shootTimer = 0;
     sfxShoot();
-    const bx = this.x, by = this.y - 5;
-    if (this.bulletLevel >= 1) bullets.push({x:bx, y:by, vx:0, vy:-4, w:1, h:3});
+    const bx = this.x, by = this.y - 8;
+    const bspd = -2.8; // 30% slower than original -4
+    if (this.bulletLevel >= 1) bullets.push({x:bx, y:by, vx:0, vy:bspd, w:2, h:4});
     if (this.bulletLevel >= 2) {
-      bullets.push({x:bx-3, y:by+2, vx:0, vy:-4, w:1, h:3});
-      bullets.push({x:bx+3, y:by+2, vx:0, vy:-4, w:1, h:3});
+      bullets.push({x:bx-5, y:by+3, vx:0, vy:bspd, w:2, h:4});
+      bullets.push({x:bx+5, y:by+3, vx:0, vy:bspd, w:2, h:4});
     }
     if (this.bulletLevel >= 3) {
-      bullets.push({x:bx-2, y:by, vx:-0.7, vy:-3.8, w:1, h:2});
-      bullets.push({x:bx+2, y:by, vx:0.7, vy:-3.8, w:1, h:2});
+      bullets.push({x:bx-3, y:by, vx:-0.5, vy:bspd*0.95, w:2, h:3});
+      bullets.push({x:bx+3, y:by, vx:0.5, vy:bspd*0.95, w:2, h:3});
     }
   }
   launchMissile(missiles) {
@@ -480,8 +502,8 @@ class Player {
     const interval = this.missileLevel >= 2 ? 60 : this.missileInterval;
     if (this.missileTimer >= interval) {
       this.missileTimer = 0;
-      missiles.push(new Missile(this.x - 3, this.y - 4));
-      if (this.missileLevel >= 2) missiles.push(new Missile(this.x + 3, this.y - 4));
+      missiles.push(new Missile(this.x - 5, this.y - 6));
+      if (this.missileLevel >= 2) missiles.push(new Missile(this.x + 5, this.y - 6));
     }
   }
 }
@@ -490,8 +512,8 @@ class Player {
 class Enemy {
   constructor(type, cfg, fixedX, fixedY) {
     this.type = type;
-    this.x = fixedX !== undefined ? fixedX : 10 + Math.random() * (W - 20);
-    this.y = fixedY !== undefined ? fixedY : -10;
+    this.x = fixedX !== undefined ? fixedX : 15 + Math.random() * (W - 30);
+    this.y = fixedY !== undefined ? fixedY : -15;
     this.wobble = Math.random() * Math.PI * 2;
     this.shootTimer = Math.random() * 60;
     this.hitFlash = 0;
@@ -499,38 +521,38 @@ class Enemy {
 
     switch(type) {
       case 0:
-        this.w = 7; this.h = 5;
+        this.w = 14; this.h = 10;
         this.speed = (0.8 + Math.random() * 0.5) * sm;
         this.hp = Math.ceil(1 * hm); this.maxHp = this.hp;
         this.score = 10;
-        this.shootInterval = Math.max(15, Math.floor(80 / cfg.enemyShootMult));
+        this.shootInterval = Math.max(20, Math.floor(100 / cfg.enemyShootMult));
         this.canShoot = cfg.level > 1;
         this.bulletSpeed = bs;
         break;
       case 1:
-        this.w = 9; this.h = 7;
+        this.w = 18; this.h = 14;
         this.speed = (0.3 + Math.random() * 0.2) * sm;
         this.hp = Math.ceil(5 * hm); this.maxHp = this.hp;
         this.score = 50;
-        this.shootInterval = Math.max(12, Math.floor(50 / cfg.enemyShootMult));
+        this.shootInterval = Math.max(16, Math.floor(65 / cfg.enemyShootMult));
         this.canShoot = true;
         this.bulletSpeed = bs;
         break;
       case 2:
-        this.w = 10; this.h = 7;
+        this.w = 20; this.h = 14;
         this.speed = (0.2 + Math.random() * 0.1) * sm;
         this.hp = Math.ceil(8 * hm); this.maxHp = this.hp;
         this.score = 80;
-        this.shootInterval = Math.max(10, Math.floor(35 / cfg.enemyShootMult));
+        this.shootInterval = Math.max(14, Math.floor(45 / cfg.enemyShootMult));
         this.canShoot = true;
-        this.bulletSpeed = bs + 0.3;
+        this.bulletSpeed = bs + 0.2;
         break;
       case 3:
-        this.w = 9; this.h = 7;
+        this.w = 18; this.h = 14;
         this.speed = (0.4 + Math.random() * 0.2) * sm;
         this.hp = Math.ceil(3 * hm); this.maxHp = this.hp;
         this.score = 35;
-        this.shootInterval = Math.max(12, Math.floor(60 / cfg.enemyShootMult));
+        this.shootInterval = Math.max(16, Math.floor(75 / cfg.enemyShootMult));
         this.canShoot = true;
         this.bulletSpeed = bs;
         this.moveDir = Math.random() > 0.5 ? 1 : -1;
@@ -543,8 +565,8 @@ class Enemy {
     if (this.hitFlash > 0) this.hitFlash--;
     if (this.type === 0) this.x += Math.sin(this.wobble) * 0.4;
     if (this.type === 3) {
-      this.x += this.moveDir * 0.6;
-      if (this.x < 8 || this.x > W - 8) this.moveDir *= -1;
+      this.x += this.moveDir * 0.5;
+      if (this.x < 12 || this.x > W - 12) this.moveDir *= -1;
     }
     if (this.canShoot) {
       this.shootTimer++;
@@ -554,11 +576,11 @@ class Enemy {
         const len = Math.sqrt(dx*dx + dy*dy);
         const spd = this.bulletSpeed;
         if (this.type === 2) {
-          enemyBullets.push({x:this.x, y:this.y+this.h/2, vx:0, vy:spd, w:2, h:2});
-          enemyBullets.push({x:this.x-2, y:this.y+this.h/2, vx:-0.6, vy:spd, w:1, h:2});
-          enemyBullets.push({x:this.x+2, y:this.y+this.h/2, vx:0.6, vy:spd, w:1, h:2});
+          enemyBullets.push({x:this.x, y:this.y+this.h/2, vx:0, vy:spd, w:3, h:3});
+          enemyBullets.push({x:this.x-3, y:this.y+this.h/2, vx:-0.4, vy:spd, w:2, h:3});
+          enemyBullets.push({x:this.x+3, y:this.y+this.h/2, vx:0.4, vy:spd, w:2, h:3});
         } else {
-          enemyBullets.push({x:this.x, y:this.y+this.h/2, vx:dx/len*spd, vy:dy/len*spd, w:1, h:2});
+          enemyBullets.push({x:this.x, y:this.y+this.h/2, vx:dx/len*spd, vy:dy/len*spd, w:2, h:3});
         }
       }
     }
@@ -572,18 +594,18 @@ class Enemy {
       case 3:
         const heli = SPRITES.heli.map(r => [...r]);
         if (Math.floor(Date.now()/60) % 2) {
-          heli[0] = [0,0,0,'#ddf','#83c','#ddf',0,0,0];
+          heli[0] = [0,0,0,'#E0E0E0','#AB47BC','#E0E0E0',0,0,0];
         }
         drawSprite(heli, this.x, this.y, flash);
         break;
     }
     if (this.maxHp > 1) {
-      const bw = this.w + 2;
+      const bw = this.w + 4;
       const bx = Math.floor(this.x - bw/2);
-      const by = Math.floor(this.y - this.h/2 - 3);
-      pxRect(bx, by, bw, 1, '#333');
+      const by = Math.floor(this.y - this.h/2 - 4);
+      pxRect(bx, by, bw, 2, 'rgba(0,0,0,0.3)');
       const fillW = Math.max(1, Math.floor(bw * (this.hp/this.maxHp)));
-      pxRect(bx, by, fillW, 1, this.hp/this.maxHp > 0.3 ? '#0f0' : '#f00');
+      pxRect(bx, by, fillW, 2, this.hp/this.maxHp > 0.3 ? '#81C784' : '#FF8A65');
     }
   }
 }
@@ -591,110 +613,104 @@ class Enemy {
 // ============ BOSS ============
 class Boss {
   constructor(type, cfg) {
-    this.type = type; // 0,1,2
-    this.x = W / 2; this.y = -20;
-    this.targetY = 25;
-    this.w = 15; this.h = 10;
+    this.type = type;
+    this.x = W / 2; this.y = -30;
+    this.targetY = 35;
+    this.w = 30; this.h = 20;  // 2x sprite
     this.maxHp = cfg.bossHp;
     this.hp = this.maxHp;
     this.score = 500 + cfg.level * 100;
-    this.phase = 1; // 1=normal, 2=enraged
+    this.phase = 1;
     this.attackTimer = 0;
     this.attackPattern = 0;
     this.moveDir = 1;
-    this.moveSpeed = 0.3;
+    this.moveSpeed = 0.25;  // slower
     this.entered = false;
     this.hitFlash = 0;
     this.summonTimer = 0;
     this.cfg = cfg;
     this.alive = true;
     this.deathTimer = 0;
-    this.names = ['CRIMSON HAWK', 'IRON FORTRESS', 'VOID PHANTOM'];
+    this.names = ['🔥 PHOENIX', '🛡️ IRON FORT', '🌀 VOID PHANTOM'];
   }
   get enraged() { return this.hp <= this.maxHp * 0.5; }
   update(enemyBullets, enemies, playerX, playerY) {
     if (!this.alive) return;
     if (this.hitFlash > 0) this.hitFlash--;
 
-    // Enter phase
     if (!this.entered) {
-      this.y += 0.5;
+      this.y += 0.4;
       if (this.y >= this.targetY) { this.y = this.targetY; this.entered = true; }
       return;
     }
 
-    // Phase transition
     if (this.enraged && this.phase === 1) {
       this.phase = 2;
-      this.moveSpeed = 0.6;
+      this.moveSpeed = 0.4;
       if (game) { game.slowMo = 5; triggerScreenFlash(); }
     }
 
-    // Movement
-    const speed = this.enraged ? this.moveSpeed * 1.5 : this.moveSpeed;
+    const speed = this.enraged ? this.moveSpeed * 1.3 : this.moveSpeed;
     this.x += this.moveDir * speed;
-    if (this.x < 15 || this.x > W - 15) this.moveDir *= -1;
+    if (this.x < 20 || this.x > W - 20) this.moveDir *= -1;
 
-    // Attacks
     this.attackTimer++;
-    const interval = this.enraged ? 30 : 50;
+    const interval = this.enraged ? 45 : 70;  // slower attacks
     if (this.attackTimer >= interval) {
       this.attackTimer = 0;
       this.attackPattern = (this.attackPattern + 1) % 3;
       this.doAttack(enemyBullets, playerX, playerY);
     }
 
-    // Summon minions
     this.summonTimer++;
-    const summonInterval = this.enraged ? 180 : 300;
+    const summonInterval = this.enraged ? 250 : 400;  // less frequent summons
     if (this.summonTimer >= summonInterval) {
       this.summonTimer = 0;
       const type = Math.random() < 0.5 ? 0 : 3;
-      enemies.push(new Enemy(type, this.cfg, this.x - 10, this.y + 5));
-      enemies.push(new Enemy(type, this.cfg, this.x + 10, this.y + 5));
+      enemies.push(new Enemy(type, this.cfg, this.x - 15, this.y + 8));
+      enemies.push(new Enemy(type, this.cfg, this.x + 15, this.y + 8));
     }
   }
   doAttack(enemyBullets, px, py) {
-    const bs = this.cfg.enemyBulletSpeed * 1.2;
+    const bs = this.cfg.enemyBulletSpeed * 0.9;  // slower boss bullets
     switch(this.attackPattern) {
-      case 0: // Spread shot
-        for (let i = -3; i <= 3; i++) {
-          const angle = Math.PI/2 + i * 0.2;
-          enemyBullets.push({x:this.x, y:this.y+5, vx:Math.cos(angle)*bs, vy:Math.sin(angle)*bs, w:2, h:2, boss:true});
+      case 0: // Spread shot - fewer bullets
+        for (let i = -2; i <= 2; i++) {
+          const angle = Math.PI/2 + i * 0.25;
+          enemyBullets.push({x:this.x, y:this.y+8, vx:Math.cos(angle)*bs, vy:Math.sin(angle)*bs, w:3, h:3, boss:true});
         }
         if (this.enraged) {
-          for (let i = -4; i <= 4; i++) {
-            const angle = Math.PI/2 + i * 0.15;
-            enemyBullets.push({x:this.x, y:this.y+5, vx:Math.cos(angle)*bs*0.8, vy:Math.sin(angle)*bs*0.8, w:1, h:1, boss:true});
+          for (let i = -3; i <= 3; i++) {
+            const angle = Math.PI/2 + i * 0.18;
+            enemyBullets.push({x:this.x, y:this.y+8, vx:Math.cos(angle)*bs*0.7, vy:Math.sin(angle)*bs*0.7, w:2, h:2, boss:true});
           }
         }
         break;
       case 1: // Tracking shots
         const dx = px - this.x, dy = py - this.y;
         const len = Math.sqrt(dx*dx+dy*dy) || 1;
-        enemyBullets.push({x:this.x, y:this.y+5, vx:dx/len*bs*1.2, vy:dy/len*bs*1.2, w:2, h:2, boss:true});
+        enemyBullets.push({x:this.x, y:this.y+8, vx:dx/len*bs, vy:dy/len*bs, w:3, h:3, boss:true});
         if (this.enraged) {
-          enemyBullets.push({x:this.x-4, y:this.y+5, vx:dx/len*bs, vy:dy/len*bs, w:2, h:2, boss:true});
-          enemyBullets.push({x:this.x+4, y:this.y+5, vx:dx/len*bs, vy:dy/len*bs, w:2, h:2, boss:true});
+          enemyBullets.push({x:this.x-6, y:this.y+8, vx:dx/len*bs*0.85, vy:dy/len*bs*0.85, w:3, h:3, boss:true});
+          enemyBullets.push({x:this.x+6, y:this.y+8, vx:dx/len*bs*0.85, vy:dy/len*bs*0.85, w:3, h:3, boss:true});
         }
         break;
-      case 2: // Circle burst
-        const count = this.enraged ? 16 : 10;
+      case 2: // Circle burst - fewer bullets
+        const count = this.enraged ? 10 : 7;
         for (let i = 0; i < count; i++) {
-          const a = (Math.PI*2/count) * i + this.attackTimer * 0.1;
-          enemyBullets.push({x:this.x, y:this.y, vx:Math.cos(a)*bs*0.8, vy:Math.sin(a)*bs*0.8, w:1, h:1, boss:true});
+          const a = (Math.PI*2/count) * i + this.attackTimer * 0.08;
+          enemyBullets.push({x:this.x, y:this.y, vx:Math.cos(a)*bs*0.7, vy:Math.sin(a)*bs*0.7, w:2, h:2, boss:true});
         }
         break;
     }
   }
   draw() {
     if (!this.alive && this.deathTimer <= 0) return;
-    const flash = this.hitFlash > 0 ? '#fff' : (this.enraged ? '#f88' : null);
+    const flash = this.hitFlash > 0 ? '#fff' : (this.enraged ? '#FFAB91' : null);
     const spriteKey = ['boss1','boss2','boss3'][this.type];
     let sprite = SPRITES[spriteKey];
-    // Enraged tint - draw with flash color
     if (this.enraged && !flash && Math.floor(Date.now()/200) % 3 === 0) {
-      drawSprite(sprite, this.x, this.y, '#f44');
+      drawSprite(sprite, this.x, this.y, '#FFAB91');
     } else {
       drawSprite(sprite, this.x, this.y, flash);
     }
@@ -719,8 +735,8 @@ const FORMATIONS = {
     for (let i = 0; i < count; i++) {
       const side = i % 2 === 0 ? -1 : 1;
       const row = Math.floor(i / 2);
-      const x = cx + side * (row + 1) * 10;
-      const y = -10 - row * 8;
+      const x = cx + side * (row + 1) * 14;
+      const y = -15 - row * 12;
       enemies.push(new Enemy(type, cfg, x, y));
     }
     return enemies;
@@ -728,20 +744,20 @@ const FORMATIONS = {
   line(cx, count, cfg) {
     const enemies = [];
     const type = getEnemyType(cfg);
-    const startX = cx - (count - 1) * 7;
+    const startX = cx - (count - 1) * 10;
     for (let i = 0; i < count; i++) {
-      enemies.push(new Enemy(type, cfg, startX + i * 14, -10));
+      enemies.push(new Enemy(type, cfg, startX + i * 20, -15));
     }
     return enemies;
   },
   circle(cx, count, cfg) {
     const enemies = [];
     const type = getEnemyType(cfg);
-    const radius = 15;
+    const radius = 22;
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 / count) * i - Math.PI / 2;
       const x = cx + Math.cos(angle) * radius;
-      const y = -20 + Math.sin(angle) * radius;
+      const y = -25 + Math.sin(angle) * radius;
       enemies.push(new Enemy(type, cfg, x, y));
     }
     return enemies;
@@ -766,12 +782,11 @@ class ComboSystem {
   }
   registerKill() {
     if (this.count > 0 && this.timer <= 0) {
-      // Combo was broken, start new
       this.count = 1;
     } else {
       this.count++;
     }
-    this.timer = 120; // 2 seconds at 60fps
+    this.timer = 120;
     if (this.count > this.maxCombo) this.maxCombo = this.count;
     if (this.count >= 2) sfxCombo(this.count);
   }
@@ -790,12 +805,12 @@ class ComboSystem {
     const el = document.getElementById('combo-display');
     const glow = document.getElementById('combo-glow');
     if (this.count >= 2) {
-      el.textContent = `x${this.count}`;
+      el.textContent = `⭐x${this.count}`;
       el.className = 'active';
-      glow.style.opacity = Math.min(0.4, this.count * 0.06);
-      if (this.count >= 5) glow.style.boxShadow = 'inset 0 0 80px 30px #f80';
-      else if (this.count >= 3) glow.style.boxShadow = 'inset 0 0 60px 20px #ff0';
-      else glow.style.boxShadow = 'inset 0 0 40px 15px #ff8';
+      glow.style.opacity = Math.min(0.3, this.count * 0.05);
+      if (this.count >= 5) glow.style.boxShadow = 'inset 0 0 80px 30px #FFB74D';
+      else if (this.count >= 3) glow.style.boxShadow = 'inset 0 0 60px 20px #FFD700';
+      else glow.style.boxShadow = 'inset 0 0 40px 15px #FFE082';
     } else if (this.breakTimer > 0) {
       el.textContent = 'BREAK!';
       el.className = 'active break';
@@ -811,9 +826,9 @@ class ComboSystem {
 class Missile {
   constructor(x, y) {
     this.x = x; this.y = y;
-    this.w = 2; this.h = 4;
-    this.speed = 1.5; this.maxSpeed = 3;
-    this.vx = 0; this.vy = -1.5;
+    this.w = 3; this.h = 6;
+    this.speed = 1.2; this.maxSpeed = 2.5;
+    this.vx = 0; this.vy = -1.2;
     this.turnRate = 0.12; this.life = 180; this.damage = 3;
     this.trail = [];
   }
@@ -842,11 +857,11 @@ class Missile {
     this.x += this.vx; this.y += this.vy;
   }
   draw() {
-    this.trail.forEach(t => { if(t.life>4) pxDot(t.x,t.y,'#f80'); else pxDot(t.x,t.y,'#840'); });
-    pxRect(this.x-1, this.y-2, 2, 4, '#fff');
-    pxDot(this.x, this.y-3, '#f44');
-    if (Math.random()>0.5) pxDot(this.x, this.y+2, '#ff0');
-    else pxDot(this.x, this.y+2, '#f80');
+    this.trail.forEach(t => { if(t.life>4) pxDot(t.x,t.y,'#FFB74D'); else pxDot(t.x,t.y,'#FFCC80'); });
+    pxRect(this.x-1, this.y-3, 3, 6, '#fff');
+    pxDot2(this.x-1, this.y-4, '#FF7043');
+    if (Math.random()>0.5) pxDot(this.x, this.y+3, '#FFE082');
+    else pxDot(this.x, this.y+3, '#FFB74D');
   }
 }
 
@@ -860,21 +875,22 @@ class PowerUp {
     else if (r < 0.7) this.type = 3;
     else if (r < 0.82) this.type = 4;
     else this.type = 5;
-    this.x = x; this.y = y; this.w = 5; this.h = 5;
-    this.speed = 0.6; this.age = 0;
-    this.labels = ['W+','T+','SH','HP','SP','MS'];
-    this.colors = ['#ff0','#f80','#0ff','#f4a','#0f0','#f60'];
+    this.x = x; this.y = y; this.w = 8; this.h = 8;  // bigger
+    this.speed = 0.5; this.age = 0;
+    this.labels = ['W+','T+','🛡️','❤️','⚡','🚀'];
+    this.colors = ['#FFD700','#FF9800','#64FFDA','#FF80AB','#69F0AE','#FF7043'];
   }
   update() { this.y += this.speed; this.age++; }
   draw() {
     const blink = Math.floor(this.age/10) % 2;
     const c = blink ? this.colors[this.type] : '#fff';
-    pxRect(this.x-2, this.y-2, 5, 5, '#000');
-    pxRect(this.x-2, this.y-2, 5, 1, c);
-    pxRect(this.x-2, this.y+2, 5, 1, c);
-    pxRect(this.x-2, this.y-2, 1, 5, c);
-    pxRect(this.x+2, this.y-2, 1, 5, c);
-    pxDot(this.x, this.y, c);
+    // Bigger powerup box
+    pxRect(this.x-4, this.y-4, 8, 8, 'rgba(0,0,0,0.2)');
+    pxRect(this.x-4, this.y-4, 8, 2, c);
+    pxRect(this.x-4, this.y+2, 8, 2, c);
+    pxRect(this.x-4, this.y-4, 2, 8, c);
+    pxRect(this.x+2, this.y-4, 2, 8, c);
+    pxDot2(this.x-1, this.y-1, c);
   }
   apply(player) {
     sfxPickup();
@@ -890,21 +906,22 @@ class PowerUp {
   }
 }
 
-// ============ EXPLOSION ============
+// ============ EXPLOSION (colorful particles!) ============
 class Explosion {
-  constructor(x, y, color='#f80', big=false) {
+  constructor(x, y, color='#FFB74D', big=false) {
     this.particles = [];
-    const count = big ? 12 : 6;
+    const count = big ? 14 : 8;
+    const colors = ['#FFE082','#FFB74D','#FF7043','#64FFDA','#CE93D8','#81C784','#64D2FF','#FF80AB'];
     for (let i = 0; i < count; i++) {
       const angle = Math.random()*Math.PI*2, speed = (big?1:0.5)+Math.random()*(big?2:1.5);
-      this.particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:10+Math.random()*8,color});
+      this.particles.push({x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:12+Math.random()*8,color:colors[Math.floor(Math.random()*colors.length)]});
     }
   }
   update() { this.particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.life--;p.vx*=0.95;p.vy*=0.95;}); this.particles=this.particles.filter(p=>p.life>0); }
   draw() {
     this.particles.forEach(p=>{
-      const c = p.life > 10 ? '#fff' : p.life > 5 ? p.color : '#840';
-      pxDot(p.x, p.y, c);
+      const c = p.life > 10 ? '#fff' : p.life > 5 ? p.color : '#FFCC80';
+      pxDot2(p.x, p.y, c);
     });
   }
   get done() { return this.particles.length === 0; }
@@ -913,7 +930,7 @@ class Explosion {
 class MegaExplosion {
   constructor(x, y) {
     this.particles = [];
-    const colors = ['#fff','#ff0','#f80','#f44','#f0f','#0ff'];
+    const colors = ['#fff','#FFE082','#FFB74D','#FF80AB','#CE93D8','#64FFDA','#81C784','#64D2FF'];
     for (let layer = 0; layer < 4; layer++) {
       const count = 15 + layer * 5;
       const delay = layer * 4;
@@ -939,9 +956,9 @@ class MegaExplosion {
   draw() {
     this.particles.forEach(p => {
       if (p.delay > 0) return;
-      const c = p.life > 12 ? '#fff' : p.life > 6 ? p.color : '#840';
-      pxDot(p.x, p.y, c);
-      if (p.life > 10) pxDot(p.x+1, p.y, c);
+      const c = p.life > 12 ? '#fff' : p.life > 6 ? p.color : '#FFCC80';
+      pxDot2(p.x, p.y, c);
+      if (p.life > 10) pxDot2(p.x+2, p.y, c);
     });
   }
   get done() { return this.particles.length === 0; }
@@ -950,8 +967,16 @@ class MegaExplosion {
 // ============ SCREEN EFFECTS ============
 function triggerScreenFlash() {
   const el = document.getElementById('screen-flash');
-  el.style.opacity = '0.6';
+  el.style.opacity = '0.4';
   setTimeout(() => el.style.opacity = '0', 80);
+}
+
+// ============ HEARTS DISPLAY ============
+function updateHeartsDisplay(lives) {
+  const el = document.getElementById('lives-display');
+  let hearts = '';
+  for (let i = 0; i < Math.min(lives, 10); i++) hearts += '❤️';
+  el.textContent = hearts || '💔';
 }
 
 // ============ GAME STATE ============
@@ -968,18 +993,23 @@ function collides(a, b) { return Math.abs(a.x-b.x)<(a.w+b.w)/2 && Math.abs(a.y-b
 // ============ PIXEL TEXT ============
 function drawPixelText(text, x, y, color, size) {
   offCtx.fillStyle = color;
-  offCtx.font = (size || 5) + 'px monospace';
+  offCtx.font = 'bold ' + (size || 7) + 'px Arial, sans-serif';
   offCtx.textAlign = 'center';
   offCtx.textBaseline = 'middle';
+  // soft shadow
+  offCtx.fillStyle = 'rgba(0,0,0,0.3)';
+  offCtx.fillText(text, Math.floor(x)+1, Math.floor(y)+1);
+  offCtx.fillStyle = color;
   offCtx.fillText(text, Math.floor(x), Math.floor(y));
 }
 
-// ============ SCANLINES ============
-function drawScanlines() {
-  ctx.fillStyle = 'rgba(0,0,0,0.06)';
-  for (let y = 0; y < canvas.height; y += 3) {
-    ctx.fillRect(0, y, canvas.width, 1);
-  }
+// ============ DRAW GRADIENT BACKGROUND ============
+function drawGradientBg(theme) {
+  const grd = offCtx.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0, theme.bg1);
+  grd.addColorStop(1, theme.bg2);
+  offCtx.fillStyle = grd;
+  offCtx.fillRect(0, 0, W, H);
 }
 
 // ============ LEVEL SELECT ============
@@ -991,13 +1021,13 @@ function buildLevelGrid() {
     const cleared = clearedLevels.includes(i);
     const locked = i > maxUnlocked;
     btn.className = 'level-btn' + (locked ? ' locked' : '') + (cleared ? ' cleared' : '');
-    btn.innerHTML = locked ? '#' : `${i}<span>${cleared ? '★' : '.'}</span>`;
+    btn.innerHTML = locked ? '🔒' : `${i}<span>${cleared ? '⭐' : '·'}</span>`;
     if (!locked) btn.onclick = () => playLevel(i);
     grid.appendChild(btn);
   }
   const hint = document.getElementById('level-hint');
-  if (maxUnlocked <= 10) hint.textContent = `UNLOCKED: ${maxUnlocked}/10`;
-  else hint.textContent = '*** ALL CLEAR ***';
+  if (maxUnlocked <= 10) hint.textContent = `已解锁: ${maxUnlocked}/10`;
+  else hint.textContent = '🎉 全部通关! 🎉';
 }
 
 function showLevelSelect() {
@@ -1042,6 +1072,7 @@ function playLevel(level) {
     formationTimer: 0, formationWave: 0,
     slowMo: 0, slowMoAccum: 0,
   };
+  updateHeartsDisplay(game.lives);
   startBGM();
   loop();
 }
@@ -1064,7 +1095,7 @@ function levelCleared() {
   document.getElementById('boss-name').style.display = 'none';
   const nextBtn = document.getElementById('next-btn');
   nextBtn.classList.toggle('locked', currentLevel >= 10);
-  nextBtn.textContent = currentLevel >= 10 ? 'ALL CLEAR!' : '下一关 >>';
+  nextBtn.textContent = currentLevel >= 10 ? '🎉 全部通关!' : '下一关 >>';
 }
 
 function gameOver() {
@@ -1090,7 +1121,7 @@ function spawnFormation() {
   const types = [FORMATIONS.vShape, FORMATIONS.line, FORMATIONS.circle];
   const fn = types[g.formationWave % 3];
   const count = 3 + Math.floor(cfg.level / 3);
-  const cx = 20 + Math.random() * (W - 40);
+  const cx = 30 + Math.random() * (W - 60);
   const enemies = fn(cx, count, cfg);
   enemies.forEach(e => g.enemies.push(e));
   g.formationWave++;
@@ -1103,7 +1134,7 @@ function loop() {
 
   // Slow motion
   if (g.slowMo > 0) {
-    g.slowMoAccum += 0.3; // run at 30% speed
+    g.slowMoAccum += 0.3;
     g.slowMo--;
     if (g.slowMoAccum < 1) { requestAnimationFrame(loop); return; }
     g.slowMoAccum -= 1;
@@ -1111,14 +1142,13 @@ function loop() {
 
   const theme = g.cfg.theme;
 
-  // Clear
-  offCtx.fillStyle = theme.bg;
-  offCtx.fillRect(0, 0, W, H);
+  // Clear with gradient background
+  drawGradientBg(theme);
 
   // Background clouds
   g.bgClouds.forEach(c => { c.update(); c.draw(); });
 
-  // Stars
+  // Stars (decorative sparkles)
   g.stars.forEach(s => { s.update(); s.draw(); });
 
   // Screen shake
@@ -1132,8 +1162,8 @@ function loop() {
   if (g.levelAnnounce > 0) {
     g.levelAnnounce--;
     if (g.levelAnnounce > 30 || Math.floor(g.levelAnnounce/4)%2) {
-      drawPixelText(`STAGE ${g.cfg.level}`, W/2, H/2-8, '#0f0');
-      drawPixelText(`KILL ${g.cfg.killsToWin} + BOSS`, W/2, H/2+2, '#080');
+      drawPixelText(`STAGE ${g.cfg.level}`, W/2, H/2-10, '#fff', 9);
+      drawPixelText(`消灭 ${g.cfg.killsToWin} 个 + BOSS`, W/2, H/2+4, 'rgba(255,255,255,0.7)', 6);
     }
   }
 
@@ -1143,8 +1173,8 @@ function loop() {
     g.player.x += (targetX - g.player.x) * moveSpeed;
     g.player.y += (targetY - g.player.y) * moveSpeed;
   }
-  g.player.x = Math.max(6, Math.min(W-6, g.player.x));
-  g.player.y = Math.max(6, Math.min(H-6, g.player.y));
+  g.player.x = Math.max(10, Math.min(W-10, g.player.x));
+  g.player.y = Math.max(10, Math.min(H-10, g.player.y));
 
   g.player.shoot(g.bullets);
   g.player.launchMissile(g.missiles);
@@ -1158,11 +1188,11 @@ function loop() {
   if (!g.bossSpawned) {
     g.spawnTimer++;
     if (g.spawnTimer >= g.cfg.spawnInterval) { g.spawnTimer = 0; spawnEnemy(); }
-    if (g.frame % 120 === 0 && Math.random() < g.cfg.extraSpawnChance) spawnEnemy();
+    if (g.frame % 150 === 0 && Math.random() < g.cfg.extraSpawnChance) spawnEnemy();
 
-    // Formation spawning
+    // Formation spawning (less frequent)
     g.formationTimer++;
-    const formInterval = Math.max(200, 400 - g.cfg.level * 20);
+    const formInterval = Math.max(280, 500 - g.cfg.level * 20);
     if (g.formationTimer >= formInterval) {
       g.formationTimer = 0;
       spawnFormation();
@@ -1185,10 +1215,9 @@ function loop() {
   // Update boss
   if (g.boss && g.boss.alive) {
     g.boss.update(g.enemyBullets, g.enemies, g.player.x, g.player.y);
-    // Update boss HP bar
     const fill = document.getElementById('boss-hp-fill');
     fill.style.width = (g.boss.hp / g.boss.maxHp * 100) + '%';
-    fill.style.background = g.boss.enraged ? '#f00' : '#f44';
+    fill.style.background = g.boss.enraged ? 'linear-gradient(90deg, #FF7043, #FF5722)' : 'linear-gradient(90deg, #FF7043, #FFAB91)';
   }
 
   // Update missiles
@@ -1196,10 +1225,9 @@ function loop() {
     m.update(g.enemies, g.boss);
     if (m.life<=0||m.x<-20||m.x>W+20||m.y<-20||m.y>H+20) return false;
 
-    // Hit boss
     if (g.boss && g.boss.alive && g.boss.entered) {
       if (Math.abs(m.x-g.boss.x)<(g.boss.w+m.w)/2 && Math.abs(m.y-g.boss.y)<(g.boss.h+m.h)/2) {
-        g.explosions.push(new Explosion(m.x, m.y, '#f80', true));
+        g.explosions.push(new Explosion(m.x, m.y, '#FFB74D', true));
         g.screenShake = 4;
         if (g.boss.takeDamage(m.damage)) handleBossDeath();
         return false;
@@ -1210,7 +1238,7 @@ function loop() {
       const e = g.enemies[i];
       if (Math.abs(m.x-e.x)<(e.w+m.w)/2 && Math.abs(m.y-e.y)<(e.h+m.h)/2) {
         e.hp -= m.damage; e.hitFlash = 3;
-        g.explosions.push(new Explosion(m.x, m.y, '#f80', true));
+        g.explosions.push(new Explosion(m.x, m.y, '#FFB74D', true));
         g.screenShake = 4;
         if (e.hp <= 0) {
           handleEnemyKill(e, i);
@@ -1223,11 +1251,10 @@ function loop() {
 
   // Player bullets hit enemies & boss
   g.bullets = g.bullets.filter(b => {
-    // Hit boss
     if (g.boss && g.boss.alive && g.boss.entered) {
       if (Math.abs(b.x-g.boss.x)<(g.boss.w+b.w)/2 && Math.abs(b.y-g.boss.y)<(g.boss.h+b.h)/2) {
         if (g.boss.takeDamage(1)) handleBossDeath();
-        else g.explosions.push(new Explosion(b.x, b.y, '#ff0'));
+        else g.explosions.push(new Explosion(b.x, b.y, '#FFE082'));
         return false;
       }
     }
@@ -1238,7 +1265,7 @@ function loop() {
         e.hp--; e.hitFlash = 3;
         if (e.hp <= 0) {
           handleEnemyKill(e, i);
-        } else { g.explosions.push(new Explosion(b.x,b.y,'#ff0')); }
+        } else { g.explosions.push(new Explosion(b.x,b.y,'#FFE082')); }
         return false;
       }
     }
@@ -1253,8 +1280,8 @@ function loop() {
   if (g.player.invincible <= 0) {
     g.enemyBullets = g.enemyBullets.filter(b => {
       if (collides({x:b.x,y:b.y,w:b.w,h:b.h}, g.player)) {
-        if (g.player.shield > 0) { g.player.shield = Math.max(0,g.player.shield-60); g.explosions.push(new Explosion(b.x,b.y,'#0ff')); }
-        else { g.lives--; g.player.invincible=90; g.explosions.push(new Explosion(g.player.x,g.player.y,'#0af')); g.screenShake=5;
+        if (g.player.shield > 0) { g.player.shield = Math.max(0,g.player.shield-60); g.explosions.push(new Explosion(b.x,b.y,'#64FFDA')); }
+        else { g.lives--; updateHeartsDisplay(g.lives); g.player.invincible=90; g.explosions.push(new Explosion(g.player.x,g.player.y,'#64D2FF')); g.screenShake=5;
           if(g.lives<=0) gameOver(); }
         return false;
       }
@@ -1265,17 +1292,17 @@ function loop() {
   // Player body collision with enemies
   if (g.player.invincible <= 0) {
     g.enemies = g.enemies.filter(e => {
-      if (e.y > H+10) return false;
+      if (e.y > H+15) return false;
       if (collides(g.player, e)) {
-        if (g.player.shield > 0) { g.player.shield=0; e.hp-=2; g.explosions.push(new Explosion(e.x,e.y,'#0ff'));
+        if (g.player.shield > 0) { g.player.shield=0; e.hp-=2; g.explosions.push(new Explosion(e.x,e.y,'#64FFDA'));
           if(e.hp<=0){ handleEnemyKill(e, -1); return false;} return true; }
-        g.lives--; g.player.invincible=90; g.explosions.push(new Explosion(e.x,e.y,'#f44',true)); g.screenShake=6;
+        g.lives--; updateHeartsDisplay(g.lives); g.player.invincible=90; g.explosions.push(new Explosion(e.x,e.y,'#FF80AB',true)); g.screenShake=6;
         if(g.lives<=0) gameOver();
         return false;
       }
       return true;
     });
-  } else { g.enemies = g.enemies.filter(e => e.y <= H+10); }
+  } else { g.enemies = g.enemies.filter(e => e.y <= H+15); }
 
   // Powerups
   g.powerups.forEach(p => p.update());
@@ -1283,8 +1310,8 @@ function loop() {
     if (p.y > H+10) return false;
     if (collides(g.player, p)) {
       const result = p.apply(g.player);
-      if (result === 'life') g.lives = Math.min(g.lives+1, 10);
-      g.powerupMsg = typeof result==='string' && result!=='life' ? result : 'HP+';
+      if (result === 'life') { g.lives = Math.min(g.lives+1, 10); updateHeartsDisplay(g.lives); }
+      g.powerupMsg = typeof result==='string' && result!=='life' ? result : '❤️+1';
       g.powerupMsgTimer = 60;
       return false;
     }
@@ -1292,11 +1319,13 @@ function loop() {
   });
 
   // ====== DRAW ======
+  // Enemy bullets (orange, not red)
   g.enemyBullets.forEach(b => {
-    const c = b.boss ? '#f8f' : '#f44';
-    pxRect(b.x, b.y, b.w, b.h, c);
+    const c = b.boss ? '#FF9800' : '#FFAB40';
+    pxRect(b.x-1, b.y-1, b.w, b.h, c);
   });
-  g.bullets.forEach(b => pxRect(b.x, b.y, b.w, b.h, '#0ff'));
+  // Player bullets (soft cyan/blue)
+  g.bullets.forEach(b => pxRect(b.x-1, b.y-1, b.w, b.h, '#64D2FF'));
   g.enemies.forEach(e => e.draw());
   if (g.boss) g.boss.draw();
   g.missiles.forEach(m => m.draw());
@@ -1309,43 +1338,42 @@ function loop() {
   if (g.powerupMsgTimer > 0) {
     g.powerupMsgTimer--;
     if (Math.floor(g.powerupMsgTimer/3) % 2)
-      drawPixelText(g.powerupMsg, W/2, H/2-15, '#ff0');
+      drawPixelText(g.powerupMsg, W/2, H/2-20, '#FFD700', 8);
   }
 
   // Progress bar (kills until boss)
   if (!g.bossSpawned) {
     const progress = g.killCount / g.cfg.killsToWin;
-    const barW = 30, barX = Math.floor(W/2-barW/2), barY = 10;
-    pxRect(barX, barY, barW, 2, '#222');
-    pxRect(barX, barY, Math.max(1, Math.floor(barW * Math.min(1, progress))), 2, '#0f0');
+    const barW = 40, barX = Math.floor(W/2-barW/2), barY = 14;
+    pxRect(barX, barY, barW, 3, 'rgba(0,0,0,0.2)');
+    pxRect(barX, barY, Math.max(1, Math.floor(barW * Math.min(1, progress))), 3, '#81C784');
   }
 
   // BOSS WARNING text
   if (g.bossSpawned && g.boss && !g.boss.entered) {
     if (Math.floor(g.frame/10) % 2)
-      drawPixelText('!! WARNING !!', W/2, H/2, '#f44', 6);
+      drawPixelText('⚠️ WARNING ⚠️', W/2, H/2, '#FF7043', 8);
   }
 
   // UI
   document.getElementById('score').textContent = g.score;
-  document.getElementById('lives').textContent = g.lives;
   const pd = document.getElementById('ui-center');
   const parts = [`LV${g.cfg.level}`];
   if (g.player.bulletLevel>=2) parts.push('W');
   if (g.player.bulletLevel>=3) parts.push('T');
-  if (g.player.shield>0) parts.push('SH');
-  if (g.player.speedBoost>0) parts.push('SP');
-  if (g.player.hasMissile) parts.push('MS');
+  if (g.player.shield>0) parts.push('🛡️');
+  if (g.player.speedBoost>0) parts.push('⚡');
+  if (g.player.hasMissile) parts.push('🚀');
   pd.textContent = parts.join(' ');
 
-  // Render to main canvas
+  // Render to main canvas (NO scanlines!)
   ctx.imageSmoothingEnabled = false;
   const sx = Math.floor(g.shakeX * PIXEL_SCALE);
   const sy = Math.floor(g.shakeY * PIXEL_SCALE);
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = theme.bg2 || '#E1F5FE';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(offCanvas, sx, sy, W, H, 0, 0, canvas.width, canvas.height);
-  drawScanlines();
+  // No scanlines - removed for kid-friendly experience
 
   requestAnimationFrame(loop);
 }
@@ -1358,7 +1386,8 @@ function handleEnemyKill(e, idx) {
   g.score += e.score * mult;
   g.killCount++;
   const isBig = e.type >= 1;
-  g.explosions.push(new Explosion(e.x, e.y, e.type===2?'#4a5':e.type===3?'#a5f':'#f44', isBig));
+  // Colorful explosions
+  g.explosions.push(new Explosion(e.x, e.y, '#FFB74D', isBig));
   sfxExplosion(isBig);
   g.screenShake = isBig ? 4 : 1;
   if (isBig) g.slowMo = 3;
@@ -1373,15 +1402,12 @@ function handleBossDeath() {
   g.score += g.boss.score * mult;
   g.boss.alive = false;
   g.bossDefeated = true;
-  // Mega explosion
   g.explosions.push(new MegaExplosion(g.boss.x, g.boss.y));
   g.screenShake = 15;
   g.slowMo = 8;
   triggerScreenFlash();
   sfxBossDeath();
-  // Clear enemy bullets
   g.enemyBullets = [];
-  // Level clear after delay
   setTimeout(() => { if (game === g) levelCleared(); }, 1500);
 }
 
