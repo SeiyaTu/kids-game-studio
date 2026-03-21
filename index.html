@@ -811,7 +811,7 @@ class Player {
     this.shootTimer = 0; this.shootInterval = 14;
     this.bulletLevel = 1;
     this.shield = 0; this.speedBoost = 0; this.invincible = 0;
-    this.missileTimer = 0; this.missileInterval = 300;
+    this.missileTimer = 250; this.missileInterval = 300;
     this.hasMissile = true; this.missileLevel = 0;
   }
   draw(time) { drawPlayer(this.x, this.y, this.invincible, this.shield, this.speedBoost, time); }
@@ -834,14 +834,14 @@ class Player {
       bullets.push({x:bx+8, y:by, vx:1.2, vy:bspd*0.95, r:4});
     }
   }
-  launchMissile(missiles) {
-    if (!this.hasMissile) return;
+  launchMissile(missiles, enemies) {
     this.missileTimer++;
     const interval = this.missileLevel >= 2 ? 180 : this.missileInterval;
-    if (this.missileTimer >= interval) {
+    if (this.missileTimer >= interval && enemies.length > 0) {
       this.missileTimer = 0;
       missiles.push(new Missile(this.x - 12, this.y - 15));
       if (this.missileLevel >= 2) missiles.push(new Missile(this.x + 12, this.y - 15));
+      if (typeof sfxShoot === 'function') sfxShoot();
     }
   }
 }
@@ -1005,9 +1005,9 @@ class ComboSystem {
 // ============ MISSILE ============
 class Missile {
   constructor(x, y) {
-    this.x = x; this.y = y; this.w = 8; this.h = 16;
-    this.speed = 2.4; this.maxSpeed = 5; this.vx = 0; this.vy = -2.4;
-    this.turnRate = 0.12; this.life = 180; this.damage = 3; this.trail = [];
+    this.x = x; this.y = y; this.w = 12; this.h = 20;
+    this.speed = 3; this.maxSpeed = 6; this.vx = 0; this.vy = -3;
+    this.turnRate = 0.15; this.life = 240; this.damage = 3; this.trail = [];
   }
   findTarget(enemies, boss) {
     let closest = null, minDist = Infinity;
@@ -1035,10 +1035,10 @@ class Missile {
     // Missile body
     const angle = Math.atan2(this.vy, this.vx);
     ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(angle + Math.PI/2);
-    drawRoundRect(-3, -8, 6, 16, 3, '#fff');
-    drawCircle(0, -8, 4, '#FF7043');
+    drawRoundRect(-4, -10, 8, 20, 4, '#fff');
+    drawCircle(0, -10, 5, '#FF7043');
     // Flame at back
-    ctx.beginPath(); ctx.moveTo(-3, 8); ctx.quadraticCurveTo(0, 16 + Math.random()*4, 3, 8);
+    ctx.beginPath(); ctx.moveTo(-4, 10); ctx.quadraticCurveTo(0, 20 + Math.random()*6, 4, 10);
     ctx.fillStyle = '#FFE082'; ctx.fill();
     ctx.restore();
   }
@@ -1340,7 +1340,7 @@ function loop() {
   g.player.y = Math.max(30, Math.min(H-30, g.player.y));
 
   g.player.shoot(g.bullets);
-  g.player.launchMissile(g.missiles);
+  g.player.launchMissile(g.missiles, g.enemies);
 
   // Update bullets
   g.bullets = g.bullets.filter(b => { b.x+=b.vx; b.y+=b.vy; return b.y>-10&&b.x>-10&&b.x<W+10; });
