@@ -835,6 +835,405 @@ class Rainbow {
   }
 }
 
+// ============ BACKGROUND DECORATIONS ============
+
+// --- SKY (level 1-5) additions ---
+class BgSun {
+  constructor(x, y, radius) { this.x = x; this.y = y; this.r = radius; this.pulse = 0; }
+  update(smf) { this.pulse += 0.02 * smf; }
+  draw() {
+    const r = this.r + Math.sin(this.pulse) * 3;
+    ctx.globalAlpha = 0.25;
+    const glow = ctx.createRadialGradient(this.x, this.y, r * 0.3, this.x, this.y, r * 1.8);
+    glow.addColorStop(0, '#FFF9C4'); glow.addColorStop(0.5, 'rgba(255,245,157,0.3)'); glow.addColorStop(1, 'rgba(255,245,157,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(this.x, this.y, r * 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#FFF9C4'; ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+class BgBirdGroup {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = -60; this.y = 40 + Math.random() * (H * 0.4);
+    this.speed = 0.3 + Math.random() * 0.4;
+    this.count = 2 + Math.floor(Math.random() * 2);
+    this.wing = 0;
+    this.delay = Math.random() * 600;
+  }
+  update(smf) {
+    if (this.delay > 0) { this.delay -= smf; return; }
+    this.x += this.speed * smf; this.wing += 0.06 * smf;
+    if (this.x > W + 80) this.reset();
+  }
+  draw() {
+    if (this.delay > 0) return;
+    ctx.globalAlpha = 0.3;
+    ctx.strokeStyle = '#455A64'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    for (let i = 0; i < this.count; i++) {
+      const ox = i * 18, oy = (i % 2) * 10;
+      const w = Math.sin(this.wing + i * 0.5) * 4;
+      ctx.beginPath();
+      ctx.moveTo(this.x + ox - 6, this.y + oy + w);
+      ctx.quadraticCurveTo(this.x + ox, this.y + oy - 4, this.x + ox + 6, this.y + oy + w);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+// --- DESERT (level 6-10) ---
+class DesertDunes {
+  constructor() { this.offset = 0; }
+  update(smf) { this.offset += 0.15 * smf; }
+  draw() {
+    const layers = [
+      { color: 'rgba(255,193,7,0.3)', h: 80, speed: 1, yOff: 0 },
+      { color: 'rgba(255,179,0,0.35)', h: 60, speed: 1.5, yOff: 20 },
+      { color: 'rgba(245,166,35,0.25)', h: 45, speed: 0.7, yOff: 40 },
+    ];
+    layers.forEach(l => {
+      ctx.fillStyle = l.color;
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+      for (let x = 0; x <= W; x += 4) {
+        const y = H - l.h + Math.sin((x + this.offset * l.speed * 30) * 0.008) * 25
+                  + Math.sin((x + this.offset * l.speed * 20) * 0.015) * 12 + l.yOff;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    });
+  }
+}
+
+class DesertCactus {
+  constructor() { this.items = []; for (let i = 0; i < 4; i++) this.items.push({ x: Math.random() * W, baseY: H - 60 - Math.random() * 40, h: 20 + Math.random() * 15 }); this.offset = 0; }
+  update(smf) { this.offset += 0.15 * smf; }
+  draw() {
+    ctx.globalAlpha = 0.35;
+    this.items.forEach(c => {
+      const x = ((c.x - this.offset * 30) % (W + 100) + W + 100) % (W + 100) - 50;
+      const y = c.baseY + Math.sin((x + this.offset * 30) * 0.008) * 20;
+      ctx.fillStyle = '#66BB6A';
+      // trunk
+      const tw = 6, th = c.h;
+      ctx.beginPath(); ctx.roundRect(x - tw/2, y - th, tw, th, 3); ctx.fill();
+      // left arm
+      ctx.beginPath(); ctx.roundRect(x - tw/2 - 8, y - th * 0.6, 4, 12, 2); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x - tw/2 - 8, y - th * 0.6 - 8, 4, 10, 2); ctx.fill();
+      // right arm
+      ctx.beginPath(); ctx.roundRect(x + tw/2 + 4, y - th * 0.4, 4, 10, 2); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x + tw/2 + 4, y - th * 0.4 - 7, 4, 9, 2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+}
+
+class DesertSun {
+  constructor() { this.pulse = 0; }
+  update(smf) { this.pulse += 0.015 * smf; }
+  draw() {
+    const x = W - 60, y = 60, r = 35 + Math.sin(this.pulse) * 3;
+    ctx.globalAlpha = 0.3;
+    const glow = ctx.createRadialGradient(x, y, r * 0.3, x, y, r * 2.5);
+    glow.addColorStop(0, '#FFB74D'); glow.addColorStop(0.4, 'rgba(255,183,77,0.3)'); glow.addColorStop(1, 'rgba(255,183,77,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(x, y, r * 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = '#FFB74D'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+class DesertDust {
+  constructor() {
+    this.particles = [];
+    for (let i = 0; i < 25; i++) this.particles.push(this._newP());
+  }
+  _newP() { return { x: Math.random() * W, y: Math.random() * H, size: 1 + Math.random() * 2.5, speed: 0.5 + Math.random() * 1, alpha: 0.1 + Math.random() * 0.2 }; }
+  update(smf) {
+    this.particles.forEach(p => {
+      p.x -= p.speed * smf;
+      p.y += Math.sin(p.x * 0.01) * 0.2 * smf;
+      if (p.x < -10) { p.x = W + 10; p.y = Math.random() * H; }
+    });
+  }
+  draw() {
+    this.particles.forEach(p => {
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = '#FFE082';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+}
+
+// --- ENEMY BASE (level 11-15) ---
+class BaseBuildings {
+  constructor() {
+    this.offset = 0;
+    this.buildings = [];
+    for (let i = 0; i < 5; i++) {
+      const w = 40 + Math.random() * 50;
+      this.buildings.push({
+        x: i * (W / 4) + Math.random() * 40,
+        w: w, h: 50 + Math.random() * 60,
+        hasChimney: Math.random() > 0.4,
+        chimneyX: Math.random() * 0.6 + 0.2,
+        hasSpire: Math.random() > 0.5,
+      });
+    }
+  }
+  update(smf) { this.offset += 0.1 * smf; }
+  draw() {
+    ctx.globalAlpha = 0.3;
+    this.buildings.forEach(b => {
+      const x = ((b.x - this.offset * 20) % (W + 200) + W + 200) % (W + 200) - 100;
+      const y = H - b.h;
+      ctx.fillStyle = '#37474F';
+      ctx.fillRect(x, y, b.w, b.h);
+      // windows
+      ctx.fillStyle = 'rgba(255,235,59,0.3)';
+      for (let wy = y + 8; wy < H - 12; wy += 14) {
+        for (let wx = x + 6; wx < x + b.w - 6; wx += 12) {
+          ctx.fillRect(wx, wy, 5, 6);
+        }
+      }
+      if (b.hasChimney) {
+        const cx = x + b.w * b.chimneyX;
+        ctx.fillStyle = '#263238'; ctx.fillRect(cx - 4, y - 18, 8, 20);
+      }
+      if (b.hasSpire) {
+        ctx.fillStyle = '#263238';
+        ctx.beginPath(); ctx.moveTo(x + b.w / 2 - 8, y); ctx.lineTo(x + b.w / 2, y - 20); ctx.lineTo(x + b.w / 2 + 8, y); ctx.fill();
+      }
+    });
+    ctx.globalAlpha = 1;
+  }
+  getChimneyPositions() {
+    const positions = [];
+    this.buildings.forEach(b => {
+      if (b.hasChimney) {
+        const x = ((b.x - this.offset * 20) % (W + 200) + W + 200) % (W + 200) - 100;
+        positions.push({ x: x + b.w * b.chimneyX, y: H - b.h - 18 });
+      }
+    });
+    return positions;
+  }
+  getTopPositions() {
+    const positions = [];
+    this.buildings.forEach(b => {
+      const x = ((b.x - this.offset * 20) % (W + 200) + W + 200) % (W + 200) - 100;
+      positions.push({ x: x + b.w / 2, y: H - b.h });
+    });
+    return positions;
+  }
+}
+
+class BaseSearchlight {
+  constructor() { this.lights = [{ angle: -0.3, dir: 1, x: W * 0.3 }, { angle: 0.2, dir: -1, x: W * 0.7 }]; }
+  update(smf) {
+    this.lights.forEach(l => {
+      l.angle += l.dir * 0.008 * smf;
+      if (l.angle > 0.6 || l.angle < -0.6) l.dir *= -1;
+    });
+  }
+  draw() {
+    this.lights.forEach(l => {
+      ctx.save();
+      ctx.translate(l.x, H);
+      ctx.rotate(l.angle);
+      ctx.globalAlpha = 0.08;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.moveTo(-5, 0); ctx.lineTo(-40, -H * 0.7); ctx.lineTo(40, -H * 0.7); ctx.lineTo(5, 0);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    });
+  }
+}
+
+class BaseSmoke {
+  constructor(buildingsRef) {
+    this.buildingsRef = buildingsRef;
+    this.particles = [];
+    for (let i = 0; i < 10; i++) this.particles.push(this._newP());
+  }
+  _newP() {
+    const positions = this.buildingsRef.getChimneyPositions();
+    const pos = positions.length > 0 ? positions[Math.floor(Math.random() * positions.length)] : { x: W / 2, y: H - 100 };
+    return { x: pos.x + (Math.random() - 0.5) * 6, y: pos.y, size: 3 + Math.random() * 4, alpha: 0.25, life: 0, maxLife: 80 + Math.random() * 60 };
+  }
+  update(smf) {
+    this.particles.forEach(p => {
+      p.y -= 0.4 * smf;
+      p.x += Math.sin(p.life * 0.05) * 0.3 * smf;
+      p.size += 0.03 * smf;
+      p.life += smf;
+      p.alpha = 0.25 * (1 - p.life / p.maxLife);
+      if (p.life >= p.maxLife) Object.assign(p, this._newP());
+    });
+  }
+  draw() {
+    this.particles.forEach(p => {
+      ctx.globalAlpha = Math.max(0, p.alpha);
+      ctx.fillStyle = '#78909C';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+}
+
+class BaseWarningLights {
+  constructor(buildingsRef) { this.buildingsRef = buildingsRef; this.blink = 0; }
+  update(smf) { this.blink += 0.05 * smf; }
+  draw() {
+    const on = Math.sin(this.blink) > 0;
+    if (!on) return;
+    ctx.globalAlpha = 0.5;
+    this.buildingsRef.getTopPositions().forEach(p => {
+      ctx.fillStyle = '#F44336';
+      ctx.beginPath(); ctx.arc(p.x, p.y - 4, 3, 0, Math.PI * 2); ctx.fill();
+      const glow = ctx.createRadialGradient(p.x, p.y - 4, 1, p.x, p.y - 4, 10);
+      glow.addColorStop(0, 'rgba(244,67,54,0.4)'); glow.addColorStop(1, 'rgba(244,67,54,0)');
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(p.x, p.y - 4, 10, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+}
+
+// --- SPACE (level 16-20) ---
+class SpacePlanets {
+  constructor() {
+    this.planets = [
+      { x: W * 0.2, y: H * 0.3, r: 40, color1: '#1565C0', color2: '#0D47A1', dx: 0.05, dy: 0.02 },
+      { x: W * 0.8, y: H * 0.6, r: 30, color1: '#E65100', color2: '#BF360C', dx: -0.03, dy: 0.015 },
+    ];
+  }
+  update(smf) { this.planets.forEach(p => { p.x += p.dx * smf; p.y += p.dy * smf; if (p.x < -60 || p.x > W + 60) p.dx *= -1; if (p.y < -60 || p.y > H + 60) p.dy *= -1; }); }
+  draw() {
+    this.planets.forEach(p => {
+      ctx.globalAlpha = 0.2;
+      const grd = ctx.createRadialGradient(p.x - p.r * 0.3, p.y - p.r * 0.3, p.r * 0.1, p.x, p.y, p.r);
+      grd.addColorStop(0, p.color1); grd.addColorStop(1, p.color2);
+      ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+  }
+}
+
+class SpaceAsteroids {
+  constructor() {
+    this.rocks = [];
+    for (let i = 0; i < 6; i++) this.rocks.push(this._newRock());
+  }
+  _newRock() {
+    const sides = 5 + Math.floor(Math.random() * 4);
+    const verts = [];
+    for (let i = 0; i < sides; i++) {
+      const a = (Math.PI * 2 / sides) * i;
+      const r = 6 + Math.random() * 8;
+      verts.push({ x: Math.cos(a) * r, y: Math.sin(a) * r });
+    }
+    return { x: Math.random() * W, y: -20 - Math.random() * 200, speed: 0.2 + Math.random() * 0.3, rot: Math.random() * Math.PI * 2, rotSpd: (Math.random() - 0.5) * 0.01, verts };
+  }
+  update(smf) {
+    this.rocks.forEach(r => {
+      r.y += r.speed * smf; r.rot += r.rotSpd * smf;
+      if (r.y > H + 30) Object.assign(r, this._newRock());
+    });
+  }
+  draw() {
+    this.rocks.forEach(r => {
+      ctx.globalAlpha = 0.25;
+      ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(r.rot);
+      ctx.fillStyle = '#78909C';
+      ctx.beginPath();
+      r.verts.forEach((v, i) => i === 0 ? ctx.moveTo(v.x, v.y) : ctx.lineTo(v.x, v.y));
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    });
+  }
+}
+
+class SpaceNebula {
+  constructor() {
+    this.blobs = [
+      { x: W * 0.25, y: H * 0.2, r: 80, color: 'rgba(156,39,176,0.06)' },
+      { x: W * 0.7, y: H * 0.5, r: 60, color: 'rgba(63,81,181,0.06)' },
+      { x: W * 0.5, y: H * 0.75, r: 70, color: 'rgba(233,30,99,0.05)' },
+    ];
+  }
+  update() {}
+  draw() {
+    this.blobs.forEach(b => {
+      for (let i = 0; i < 3; i++) {
+        const ox = Math.sin(Date.now() * 0.0005 + i) * 10;
+        ctx.fillStyle = b.color;
+        ctx.beginPath(); ctx.arc(b.x + ox + i * 12, b.y + i * 8, b.r - i * 10, 0, Math.PI * 2); ctx.fill();
+      }
+    });
+  }
+}
+
+class SpaceMeteor {
+  constructor() { this.active = false; this.timer = 180 + Math.random() * 120; this.x = 0; this.y = 0; this.trail = []; }
+  update(smf) {
+    if (!this.active) {
+      this.timer -= smf;
+      if (this.timer <= 0) { this.active = true; this.x = W * 0.7 + Math.random() * W * 0.3; this.y = -10; this.trail = []; }
+      return;
+    }
+    this.trail.push({ x: this.x, y: this.y });
+    if (this.trail.length > 15) this.trail.shift();
+    this.x -= 3 * smf; this.y += 4 * smf;
+    if (this.x < -50 || this.y > H + 50) { this.active = false; this.timer = 180 + Math.random() * 120; }
+  }
+  draw() {
+    if (!this.active) return;
+    ctx.globalAlpha = 0.4;
+    this.trail.forEach((p, i) => {
+      const a = i / this.trail.length;
+      ctx.globalAlpha = a * 0.3;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * a;
+      if (i > 0) { ctx.beginPath(); ctx.moveTo(this.trail[i-1].x, this.trail[i-1].y); ctx.lineTo(p.x, p.y); ctx.stroke(); }
+    });
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// Decoration factory
+function createBgDecorations(level) {
+  const decorations = [];
+  if (level >= 1 && level <= 5) {
+    decorations.push(new BgSun(55, 55, 25));
+    decorations.push(new BgBirdGroup());
+    decorations.push(new BgBirdGroup());
+  } else if (level >= 6 && level <= 10) {
+    decorations.push(new DesertDunes());
+    decorations.push(new DesertCactus());
+    decorations.push(new DesertSun());
+    decorations.push(new DesertDust());
+  } else if (level >= 11 && level <= 15) {
+    const buildings = new BaseBuildings();
+    decorations.push(buildings);
+    decorations.push(new BaseSearchlight());
+    decorations.push(new BaseSmoke(buildings));
+    decorations.push(new BaseWarningLights(buildings));
+  } else if (level >= 16 && level <= 20) {
+    decorations.push(new SpacePlanets());
+    decorations.push(new SpaceNebula());
+    decorations.push(new SpaceAsteroids());
+    decorations.push(new SpaceMeteor());
+    decorations.push(new SpaceMeteor());
+  }
+  return decorations;
+}
+
 // ============ STAR COLLECTIBLE ============
 class StarCollectible {
   constructor(x, y) {
@@ -1702,6 +2101,7 @@ function playLevel(level) {
     bounceBall: null,
     bounceBallBtnX: 0,
     bounceBallBtnY: 0,
+    bgDecorations: createBgDecorations(level),
   };
   updateHeartsDisplay(game.lives);
   startBGM(); loop();
@@ -1790,6 +2190,9 @@ function loop() {
 
   if (g.cfg.level <= 10) { g.bgClouds.forEach(c => { const origSpeed = c.speed; c.speed *= smf; c.update(); c.speed = origSpeed; c.draw(); }); }
   if (g.cfg.level <= 10) { g.rainbow.update(); g.rainbow.draw(); }
+
+  // Background decorations
+  g.bgDecorations.forEach(d => { d.update(smf); d.draw(); });
 
   if (g.levelAnnounce > 0) {
     g.levelAnnounce--;
