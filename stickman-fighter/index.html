@@ -22,6 +22,7 @@ function resize(){
   C.width=W*dpr;C.height=H*dpr;
   X.setTransform(dpr,0,0,dpr,0,0);
   groundY=H*0.75;
+  sceneCache={};
 }
 resize();window.addEventListener('resize',resize);
 
@@ -54,7 +55,25 @@ function save(){
 }
 
 // ===== SCENES =====
+let sceneCache={};
+function getSceneCache(id){
+  let key=id+'_'+W+'_'+H;
+  if(sceneCache[key]) return sceneCache[key];
+  let oc=document.createElement('canvas');oc.width=W;oc.height=H;
+  let ox=oc.getContext('2d');
+  _drawSceneRaw(ox,id);
+  sceneCache[key]=oc;
+  return oc;
+}
 function drawScene(id){
+  X.drawImage(getSceneCache(id),0,0);
+}
+function _drawSceneRaw(X,id){
+  // Use seeded random for consistent backgrounds
+  let _seed=id*9999+7;
+  function srand(){_seed=(_seed*16807+0)%2147483647;return(_seed&0x7fffffff)/0x7fffffff;}
+  function srandR(a,b){return a+(b-a)*srand();}
+
   const w=W,h=H,gy=groundY;
   X.save();
   if(id===0){// street
@@ -62,7 +81,7 @@ function drawScene(id){
     X.fillStyle=grd;X.fillRect(0,0,w,gy);
     X.fillStyle='#555';X.fillRect(0,gy,w,h-gy);
     X.strokeStyle='#777';X.lineWidth=1;
-    for(let i=0;i<6;i++){let bx=i*w/5-20,bw=w/7,bh=rand(60,120);
+    for(let i=0;i<6;i++){let bx=i*w/5-20,bw=w/7,bh=60+srand()*60;
       X.fillStyle=`hsl(${200+i*15},20%,${40+i*5}%)`;X.fillRect(bx,gy-bh,bw,bh);
       X.strokeRect(bx,gy-bh,bw,bh);
       for(let r=0;r<3;r++)for(let c=0;c<2;c++){X.fillStyle='#8cf';X.fillRect(bx+8+c*bw/2.5,gy-bh+10+r*30,12,15);}
@@ -83,17 +102,17 @@ function drawScene(id){
   }else if(id===3){// rooftop
     X.fillStyle='#0a0a2a';X.fillRect(0,0,w,gy);
     X.fillStyle='#333';X.fillRect(0,gy,w,h-gy);
-    for(let i=0;i<10;i++){let bx=i*w/8-10,bh=rand(40,100);X.fillStyle=`hsl(${240},30%,${15+i*3}%)`;X.fillRect(bx,gy-bh,w/10,bh);
-      if(Math.random()>0.5){X.fillStyle=['#f0f','#0ff','#ff0','#f80'][i%4];X.fillRect(bx+5,gy-bh+5,w/14,4);}
+    for(let i=0;i<10;i++){let bx=i*w/8-10,bh=40+srand()*60;X.fillStyle=`hsl(${240},30%,${15+i*3}%)`;X.fillRect(bx,gy-bh,w/10,bh);
+      if(srand()>0.5){X.fillStyle=['#f0f','#0ff','#ff0','#f80'][i%4];X.fillRect(bx+5,gy-bh+5,w/14,4);}
     }
-    for(let i=0;i<40;i++){X.fillStyle='#fff';X.fillRect(rand(0,w),rand(0,gy*0.6),1,1);}
+    for(let i=0;i<40;i++){X.fillStyle='#fff';X.fillRect(srand()*w,srand()*gy*0.6,1,1);}
   }else{// volcano
     const grd=X.createLinearGradient(0,0,0,gy);grd.addColorStop(0,'#200');grd.addColorStop(0.5,'#500');grd.addColorStop(1,'#f40');
     X.fillStyle=grd;X.fillRect(0,0,w,gy);
     X.fillStyle='#311';X.fillRect(0,gy,w,h-gy);
-    X.fillStyle='#f80';for(let i=0;i<5;i++){X.fillRect(rand(0,w),gy+2,rand(30,80),3);}
-    for(let i=0;i<15;i++){X.fillStyle=`rgba(255,${rand(100,200)|0},0,${rand(0.3,0.8).toFixed(1)})`;
-      X.beginPath();X.arc(rand(0,w),rand(gy-50,gy+30),rand(1,3),0,Math.PI*2);X.fill();}
+    X.fillStyle='#f80';for(let i=0;i<5;i++){X.fillRect(srand()*w,gy+2,30+srand()*50,3);}
+    for(let i=0;i<15;i++){let rv=100+srand()*100;X.fillStyle=`rgba(255,${rv|0},0,${(0.3+srand()*0.5).toFixed(1)})`;
+      X.beginPath();X.arc(srand()*w,gy-50+srand()*80,1+srand()*2,0,Math.PI*2);X.fill();}
   }
   X.restore();
 }
