@@ -22,11 +22,7 @@ function resize(){
   C.width=W*dpr;C.height=H*dpr;
   X.setTransform(dpr,0,0,dpr,0,0);
   groundY=H*0.75;
-  if(typeof sceneId!=='undefined') sceneId=-1;
 }
-// ===== SCENES (declarations must be before resize) =====
-let sceneBuf=null, sceneId=-1;
-
 resize();window.addEventListener('resize',resize);
 
 // ===== UTILS =====
@@ -58,17 +54,7 @@ function save(){
 
 // ===== SCENES =====
 function drawScene(id){
-  if(sceneId===id && sceneBuf && sceneBuf.width===W && sceneBuf.height===H){
-    X.drawImage(sceneBuf,0,0); return;
-  }
-  sceneId=id;
-  sceneBuf=document.createElement('canvas');
-  sceneBuf.width=W; sceneBuf.height=H;
-  const S=sceneBuf.getContext('2d');
-  _drawSceneOnce(S,id,W,H,groundY);
-  X.drawImage(sceneBuf,0,0);
-}
-function _drawSceneOnce(X,id,w,h,gy){
+  const w=W,h=H,gy=groundY;
   X.save();
   if(id===0){// street
     const grd=X.createLinearGradient(0,0,0,gy);grd.addColorStop(0,'#4af');grd.addColorStop(1,'#8cf');
@@ -178,6 +164,7 @@ class Fighter{
     this.alive=true;
     this.specialActive=false;this.specialTimer=0;
     this.flashTimer=0;
+    this.knifeCooldown=0;
     // AI
     this.aiTimer=0;this.aiAction=null;this.aiDifficulty=0;
     this.scale=H/500; // scale factor
@@ -200,6 +187,7 @@ class Fighter{
     const spd=this.ch.spd*200*this.scale;
     const gravity=1200*this.scale;
 
+    this.knifeCooldown=Math.max(0,this.knifeCooldown-dt);
     this.hitStun=Math.max(0,this.hitStun-dt);
     this.blockStun=Math.max(0,this.blockStun-dt);
     this.comboTimer=Math.max(0,this.comboTimer-dt);
@@ -367,6 +355,7 @@ let difficulty=1; // 0=easy,1=normal,2=hard
 let freeEnemy=0;
 let particles=[];
 let hitEffects=[];
+let projectiles=[];
 let slowMo=0;
 let screenFlash=0;
 let comboDisplay={count:0,timer:0,x:0,y:0};
@@ -376,7 +365,7 @@ let roundStartText='';
 
 // ===== TOUCH / INPUT =====
 let joystick={active:false,id:-1,baseX:0,baseY:0,dx:0,dy:0};
-let btnStates={punch:false,kick:false,special:false};
+let btnStates={punch:false,kick:false,special:false,knife:false};
 let touches={};
 let mouseDown=false,mouseX=0,mouseY=0;
 // keyboard
@@ -392,6 +381,7 @@ function getBtns(){
   return{
     punch:{x:bx,y:by-50,r:BTN_R,color:'#e33',label:'👊'},
     kick:{x:bx-45,y:by+20,r:BTN_R,color:'#33e',label:'🦶'},
+    knife:{x:bx,y:by-120,r:BTN_R,color:'#8f8',label:'🗡️'},
     special:{x:bx+45,y:by+20,r:BTN_R,color:'#ea0',label:'⚡'}
   };
 }
@@ -475,6 +465,7 @@ function processInput(dt){
   if(keys['j'])btnStates.punch=true;
   if(keys['k'])btnStates.kick=true;
   if(keys['l'])btnStates.special=true;
+  if(keys['i'])btnStates.knife=true;
 
   const spd=player.ch.spd*200*player.scale;
   if(!player.attacking){
@@ -508,6 +499,15 @@ function processInput(dt){
     player.rage=0;
     screenFlash=0.15;slowMo=0.5;
     btnStates.special=false;if(keys['l'])keys['l']=false;
+  }
+  // knife throw
+  if(btnStates.knife&&player.knifeCooldown<=0&&projectiles.filter(p=>p.owner===player).length<3){
+    const s=player.scale;
+    projectiles.push({x:player.x+player.facing*20*s,y:player.y-player.hh*0.5,vx:player.facing*600*s,owner:player,damage:Math.round(12*player.ch.atk),knockback:player.facing*180*s,rotation:0,life:3});
+    player.knifeCooldown=5;
+    btnStates.knife=false;if(keys['i'])keys['i']=false;
+  }else{
+    btnStates.knife=false;if(keys['i'])keys['i']=false;
   }
 }
 
@@ -549,6 +549,12 @@ function updateAI(ai,target,dt){
     }
     // low hp → more aggressive
     if(ai.hp<ai.maxHp*0.3)ai.aiTimer*=0.6;
+    // knife throwing
+    if(d>120*ai.scale&&ai.knifeCooldown<=0&&projectiles.filter(p=>p.owner===ai).length<3&&Math.random()<0.15){
+      const s=ai.scale;
+      projectiles.push({x:ai.x+ai.facing*20*s,y:ai.y-ai.hh*0.5,vx:ai.facing*600*s,owner:ai,damage:Math.round(12*ai.ch.atk),knockback:ai.facing*180*s,rotation:0,life:3});
+      ai.knifeCooldown=5;
+    }
   }
 }
 
@@ -645,6 +651,35 @@ function drawParticles(){
   });
 }
 
+// ===== PROJECTILES =====
+function updateProjectiles(dt){
+  for(let i=projectiles.length-1;i>=0;i--){
+    const p=projectiles[i];
+    p.x+=p.vx*dt;p.rotation+=12*dt;p.life-=dt;
+    if(p.life<=0||p.x<-50||p.x>W+50){projectiles.splice(i,1);continue;}
+    // hit check
+    const target=p.owner===player?enemy:player;
+    if(target&&target.alive){
+      const cx=target.x,cy=target.y-target.hh*0.5;
+      if(dist(p.x,p.y,cx,cy)<25*target.scale){
+        target.takeDamage(p.damage,p.knockback,p.owner);
+        if(p.owner&&!p.owner.isAI){p.owner.rage=Math.min(p.owner.maxRage,p.owner.rage+10);comboDisplay.count++;comboDisplay.timer=1.5;comboDisplay.x=target.x;comboDisplay.y=target.y-target.hh-20;}
+        for(let j=0;j<5;j++){particles.push({x:p.x,y:p.y,vx:rand(-80,80),vy:rand(-120,20),life:rand(0.2,0.4),maxLife:0.4,color:'#8f8',size:rand(2,4)});}
+        if(!target.alive){koText.active=true;koText.timer=2;slowMo=1;}
+        projectiles.splice(i,1);
+      }
+    }
+  }
+}
+function drawProjectiles(){
+  projectiles.forEach(p=>{
+    X.save();X.translate(p.x,p.y);X.rotate(p.rotation);
+    X.strokeStyle='#cfc';X.lineWidth=2;
+    X.beginPath();X.moveTo(-7,0);X.lineTo(7,0);X.moveTo(5,-3);X.lineTo(7,0);X.lineTo(5,3);X.stroke();
+    X.restore();
+  });
+}
+
 // ===== HUD =====
 function drawHUD(){
   const barW=W*0.32,barH=14,barY=12,rageH=6;
@@ -731,9 +766,14 @@ function drawControls(){
     const b=btns[k];
     X.globalAlpha=0.5;X.fillStyle=b.color;
     if(k==='special'&&player&&player.rage<player.maxRage)X.globalAlpha=0.2;
+    if(k==='knife'&&player&&player.knifeCooldown>0)X.globalAlpha=0.2;
     X.beginPath();X.arc(b.x,b.y,b.r,0,Math.PI*2);X.fill();
     X.globalAlpha=1;X.font='20px sans-serif';X.textAlign='center';X.textBaseline='middle';
     X.fillText(b.label,b.x,b.y);
+    if(k==='knife'&&player&&player.knifeCooldown>0){
+      X.font='bold 14px sans-serif';X.fillStyle='#fff';
+      X.fillText(Math.ceil(player.knifeCooldown),b.x,b.y+22);
+    }
     X.textBaseline='alphabetic';
   }
 }
@@ -904,7 +944,7 @@ function startRound(pChar,eChar){
   player=new Fighter(pChar,W*0.3,1,false);
   enemy=new Fighter(eChar,W*0.7,-1,true);
   enemy.aiDifficulty=difficulty;
-  roundTimer=60;particles=[];hitEffects=[];
+  roundTimer=60;particles=[];hitEffects=[];projectiles=[];
   slowMo=0;screenFlash=0;koText.active=false;
   comboDisplay={count:0,timer:0,x:0,y:0};
   state='fight';
@@ -914,7 +954,6 @@ function startRound(pChar,eChar){
 // ===== MAIN LOOP =====
 function gameLoop(time){
   requestAnimationFrame(gameLoop);
-  try{
   if(!lastTime){lastTime=time;return;}
   dt=(time-lastTime)/1000;
   if(dt>0.05)dt=0.05;
@@ -938,12 +977,14 @@ function gameLoop(time){
       enemy.update(effectiveDt,player);
       checkAttacks(player,enemy);
       checkAttacks(enemy,player);
+      updateProjectiles(effectiveDt);
       roundTimer-=effectiveDt;
     }
 
     updateParticles(effectiveDt);
     player.draw();enemy.draw();
     drawParticles();
+    drawProjectiles();
     drawHUD();
     drawControls();
 
@@ -967,7 +1008,6 @@ function gameLoop(time){
   }else{
     drawMenu();
   }
-  }catch(e){console.error('gameLoop error:',e);}
 }
 
 requestAnimationFrame(gameLoop);
