@@ -43,10 +43,10 @@ const CHARS=[
 ];
 
 // ===== SAVE =====
-let coins=parseInt(localStorage.getItem('fighterCoins'))||0;
-let unlocked=JSON.parse(localStorage.getItem('fighterUnlocked')||'[0]');
-let selectedChar=parseInt(localStorage.getItem('fighterChar'))||0;
-let stageProgress=parseInt(localStorage.getItem('fighterStage'))||0;
+var coins=parseInt(localStorage.getItem('fighterCoins'))||0;
+var unlocked=JSON.parse(localStorage.getItem('fighterUnlocked')||'[0]');
+var selectedChar=parseInt(localStorage.getItem('fighterChar'))||0;
+var stageProgress=parseInt(localStorage.getItem('fighterStage'))||0;
 function save(){
   localStorage.setItem('fighterCoins',coins);
   localStorage.setItem('fighterUnlocked',JSON.stringify(unlocked));
@@ -55,7 +55,7 @@ function save(){
 }
 
 // ===== SCENES =====
-let sceneCache={};
+var sceneCache={};
 function getSceneCache(id){
   let key=id+'_'+W+'_'+H;
   if(sceneCache[key]) return sceneCache[key];
@@ -375,22 +375,22 @@ class Fighter{
 }
 
 // ===== GAME STATE =====
-let state='menu'; // menu,charSelect,stageSelect,freeSelect,fight,roundEnd,matchEnd
-let player,enemy;
-let roundNum=0,playerWins=0,enemyWins=0;
-let roundTimer=60;
-let gameMode='story'; // story,free
-let currentStage=0;
-let currentScene=0;
-let difficulty=1; // 0=easy,1=normal,2=hard
-let freeEnemy=0;
-let particles=[];
-let hitEffects=[];
-let projectiles=[];
-let slowMo=0;
-let screenFlash=0;
-let comboDisplay={count:0,timer:0,x:0,y:0};
-let koText={active:false,timer:0};
+var state='menu'; // menu,charSelect,stageSelect,freeSelect,fight,roundEnd,matchEnd
+var player,enemy;
+var roundNum=0,playerWins=0,enemyWins=0;
+var roundTimer=60;
+var gameMode='story'; // story,free
+var currentStage=0;
+var currentScene=0;
+var difficulty=1; // 0=easy,1=normal,2=hard
+var freeEnemy=0;
+var particles=[];
+var hitEffects=[];
+var projectiles=[];
+var slowMo=0;
+var screenFlash=0;
+var comboDisplay={count:0,timer:0,x:0,y:0};
+var koText={active:false,timer:0};
 let roundStartTimer=0;
 let roundStartText='';
 
@@ -846,7 +846,7 @@ function roundRectPath(x,y,w,h,r){
 }
 
 // ===== MENU SYSTEM =====
-let menuButtons=[];
+var menuButtons=[];
 function drawMenu(){
   const grd=X.createLinearGradient(0,0,0,H);grd.addColorStop(0,'#1a0a2e');grd.addColorStop(1,'#0a0a1a');
   X.fillStyle=grd;X.fillRect(0,0,W,H);
