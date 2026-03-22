@@ -22,6 +22,7 @@ function resize(){
   C.width=W*dpr;C.height=H*dpr;
   X.setTransform(dpr,0,0,dpr,0,0);
   groundY=H*0.75;
+  sceneId=-1; // invalidate scene cache on resize
 }
 resize();window.addEventListener('resize',resize);
 
@@ -53,8 +54,19 @@ function save(){
 }
 
 // ===== SCENES =====
+let sceneBuf=null, sceneId=-1;
 function drawScene(id){
-  const w=W,h=H,gy=groundY;
+  if(sceneId===id && sceneBuf && sceneBuf.width===W && sceneBuf.height===H){
+    X.drawImage(sceneBuf,0,0); return;
+  }
+  sceneId=id;
+  sceneBuf=document.createElement('canvas');
+  sceneBuf.width=W; sceneBuf.height=H;
+  const S=sceneBuf.getContext('2d');
+  _drawSceneOnce(S,id,W,H,groundY);
+  X.drawImage(sceneBuf,0,0);
+}
+function _drawSceneOnce(X,id,w,h,gy){
   X.save();
   if(id===0){// street
     const grd=X.createLinearGradient(0,0,0,gy);grd.addColorStop(0,'#4af');grd.addColorStop(1,'#8cf');
