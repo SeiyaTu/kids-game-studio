@@ -328,14 +328,12 @@ function showAdoptionScreen(){
       // Selection border
       if(i===adoptionSelection){
         actx.strokeStyle='#ffd700';actx.lineWidth=3;
-        actx.beginPath();actx.roundRect(cx-spacing/2+4,10,spacing-8,140,12);ctx.stroke();
-        actx.strokeStyle='#ffd700';actx.lineWidth=3;
-        actx.beginPath();actx.roundRect(cx-spacing/2+4,10,spacing-8,140,12);actx.stroke();
+        actx.beginPath();actx.roundRect?actx.roundRect(cx-spacing/2+4,10,spacing-8,140,12):actx.rect(cx-spacing/2+4,10,spacing-8,140);actx.stroke();
       }
       // Lock icon for rainbow if not enough XP
       if(i===4&&xp<100){
         actx.fillStyle='rgba(0,0,0,0.5)';
-        actx.beginPath();actx.roundRect(cx-spacing/2+4,10,spacing-8,140,12);actx.fill();
+        actx.beginPath();actx.roundRect?actx.roundRect(cx-spacing/2+4,10,spacing-8,140,12):actx.rect(cx-spacing/2+4,10,spacing-8,140);actx.fill();
         actx.font='24px Arial';actx.textAlign='center';actx.fillStyle='#fff';
         actx.fillText('🔒',cx,cy);
         actx.font='10px Arial';actx.fillText('100XP',cx,cy+20);
@@ -349,7 +347,7 @@ function showAdoptionScreen(){
       actx.font='11px Arial';actx.textAlign='center';actx.fillStyle='#fff';
       actx.fillText(BUNNY_VARIANTS[i].name,cx,160);
     }
-    requestAnimationFrame(drawAdoptionPreview);
+    if(gamePhase==='adoption') requestAnimationFrame(drawAdoptionPreview);
   }
   drawAdoptionPreview();
 
@@ -402,7 +400,7 @@ function showLambAdoptionScreen(){
       let cx=spacing*i+spacing/2, cy=80;
       if(i===lambAdoptionSelection){
         actx.strokeStyle='#ffd700';actx.lineWidth=3;
-        actx.beginPath();actx.roundRect(cx-spacing/2+4,10,spacing-8,140,12);actx.stroke();
+        actx.beginPath();actx.roundRect?actx.roundRect(cx-spacing/2+4,10,spacing-8,140,12):actx.rect(cx-spacing/2+4,10,spacing-8,140);actx.stroke();
       }
       let sv=ctx;ctx=actx;
       drawCuteLamb(cx,cy,18,i,false,false,t);

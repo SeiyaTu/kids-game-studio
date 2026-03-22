@@ -37,7 +37,8 @@ const CHARS=[
   {name:'长腿',cost:50,hp:90,atk:0.9,spd:1.1,special:'龙卷风旋踢',specDesc:'范围大25伤害',headR:11,bodyW:2,limbW:2,limbLen:1.2,color:'#fff',accent:'#afa'},
   {name:'胖墩',cost:80,hp:140,atk:1.1,spd:0.7,special:'相扑冲撞',specDesc:'前冲30伤害',headR:16,bodyW:4,limbW:3.5,limbLen:0.85,color:'#fff',accent:'#ffa'},
   {name:'忍者',cost:120,hp:80,atk:1.0,spd:1.4,special:'分身斩',specDesc:'3残影各8伤害',headR:11,bodyW:2,limbW:2,limbLen:1,color:'#fff',accent:'#f0f',doubleJump:true},
-  {name:'大力士',cost:200,hp:120,atk:1.5,spd:0.6,special:'地面震波',specDesc:'全屏35伤害',headR:14,bodyW:4,limbW:3.5,limbLen:0.9,color:'#fff',accent:'#f80'}
+  {name:'大力士',cost:200,hp:120,atk:1.5,spd:0.6,special:'地面震波',specDesc:'全屏35伤害',headR:14,bodyW:4,limbW:3.5,limbLen:0.9,color:'#fff',accent:'#f80'},
+  {name:'功夫道长',cost:150,hp:100,atk:1.2,spd:0.9,special:'气功炮',specDesc:'远程气功弹40伤害',headR:12,bodyW:2.5,limbW:2.5,limbLen:1,color:'#fff',accent:'#0ff',hasBeard:true}
 ];
 
 // ===== SAVE =====
@@ -275,6 +276,17 @@ class Fighter{
     X.beginPath();X.arc(headX,headY,hr,0,Math.PI*2);
     X.fillStyle=this.flashTimer>0?'#fff':baseColor;X.fill();
     if(this.isAI){X.fillStyle='#a00';X.beginPath();X.arc(headX-3*f*s,headY-2*s,2*s,0,Math.PI*2);X.fill();X.beginPath();X.arc(headX+1*f*s,headY-2*s,2*s,0,Math.PI*2);X.fill();}
+
+    // beard for 功夫道长
+    if(this.ch.hasBeard){
+      const sway=Math.sin(Date.now()/500)*3*s;
+      X.strokeStyle='#ccc';X.lineWidth=1.5*s;X.lineCap='round';
+      for(let b=-1;b<=1;b++){
+        X.beginPath();X.moveTo(headX+b*3*s,headY+hr);
+        X.quadraticCurveTo(headX+b*3*s+sway,headY+hr+10*s,headX+b*2*s+sway*1.2,headY+hr+20*s);
+        X.stroke();
+      }
+    }
 
     // fat belly for pang
     if(this.charIdx===2||(!this.isAI&&this.charIdx===2)){
@@ -525,6 +537,11 @@ function updateAI(ai,target,dt){
 
   if(!ai.attacking){
     if(d>attackRange*1.5){
+      // 功夫道长 prefers ranged specials at distance
+      if(ai.charIdx===5&&ai.rage>=ai.maxRage&&d>80*ai.scale&&Math.random()<0.5){
+        ai.attacking=true;ai.attackHit=false;ai.setAnim('special');ai.specialActive=true;ai.specialTimer=0.5;ai.rage=0;
+        screenFlash=0.1;slowMo=0.3;return;
+      }
       // approach
       ai.vx=(target.x>ai.x?1:-1)*spd*(0.5+rand(0,0.5));
       if(ai.onGround)ai.setAnim('walk');
@@ -586,6 +603,13 @@ function checkAttacks(attacker,defender){
     const ci=attacker.charIdx;
     if(ci===4){// earthquake - full screen
       hitPos={x:defender.x,y:defender.y};range=999;
+    }else if(ci===5){// 功夫道长 qi blast - spawn projectile
+      if(!attacker.attackHit){
+        const s=attacker.scale;
+        projectiles.push({x:attacker.x+attacker.facing*30*s,y:attacker.y-attacker.hh*0.5,vx:attacker.facing*500*s,owner:attacker,damage:Math.round(40*attacker.ch.atk),knockback:attacker.facing*300*s,rotation:0,life:2,isQiBlast:true});
+        attacker.attackHit=true;
+      }
+      return;
     }else{
       hitPos={x:attacker.x+attacker.facing*50*attacker.scale,y:attacker.y-40*attacker.scale};
       range=60*attacker.scale;
@@ -601,7 +625,7 @@ function checkAttacks(attacker,defender){
     else if(attacker.anim==='kick'){dmg=8*attacker.ch.atk;kb=attacker.facing*200*attacker.scale;}
     else{
       // special damage by character
-      const specDmg=[25,25,30,24,35];
+      const specDmg=[25,25,30,24,35,40];
       dmg=specDmg[attacker.charIdx]*attacker.ch.atk;
       kb=attacker.facing*250*attacker.scale;
     }
@@ -664,7 +688,9 @@ function updateProjectiles(dt){
       if(dist(p.x,p.y,cx,cy)<25*target.scale){
         target.takeDamage(p.damage,p.knockback,p.owner);
         if(p.owner&&!p.owner.isAI){p.owner.rage=Math.min(p.owner.maxRage,p.owner.rage+10);comboDisplay.count++;comboDisplay.timer=1.5;comboDisplay.x=target.x;comboDisplay.y=target.y-target.hh-20;}
-        for(let j=0;j<5;j++){particles.push({x:p.x,y:p.y,vx:rand(-80,80),vy:rand(-120,20),life:rand(0.2,0.4),maxLife:0.4,color:'#8f8',size:rand(2,4)});}
+        const pCount=p.isQiBlast?12:5;const pColor=p.isQiBlast?'#0ff':'#8f8';
+        for(let j=0;j<pCount;j++){particles.push({x:p.x,y:p.y,vx:rand(-80,80)*(p.isQiBlast?1.5:1),vy:rand(-120,20)*(p.isQiBlast?1.5:1),life:rand(0.2,0.4),maxLife:0.4,color:pColor,size:rand(2,4)*(p.isQiBlast?1.5:1)});}
+        if(p.isQiBlast){hitEffects.push({x:p.x,y:p.y,timer:0.3,size:45});}
         if(!target.alive){koText.active=true;koText.timer=2;slowMo=1;}
         projectiles.splice(i,1);
       }
@@ -673,10 +699,24 @@ function updateProjectiles(dt){
 }
 function drawProjectiles(){
   projectiles.forEach(p=>{
-    X.save();X.translate(p.x,p.y);X.rotate(p.rotation);
-    X.strokeStyle='#cfc';X.lineWidth=2;
-    X.beginPath();X.moveTo(-7,0);X.lineTo(7,0);X.moveTo(5,-3);X.lineTo(7,0);X.lineTo(5,3);X.stroke();
-    X.restore();
+    if(p.isQiBlast){
+      const s=scale||1;const r=12*s+Math.sin(Date.now()/100)*2;
+      X.save();
+      // trail
+      for(let t=3;t>=1;t--){
+        X.globalAlpha=0.15*t/3;X.fillStyle='#0ff';
+        X.beginPath();X.arc(p.x-p.vx*0.015*t,p.y,r*0.5*t/3,0,Math.PI*2);X.fill();
+      }
+      X.globalAlpha=1;X.shadowColor='#0ff';X.shadowBlur=15;
+      X.fillStyle='#0ff';X.beginPath();X.arc(p.x,p.y,r,0,Math.PI*2);X.fill();
+      X.fillStyle='#fff';X.beginPath();X.arc(p.x,p.y,r*0.4,0,Math.PI*2);X.fill();
+      X.shadowBlur=0;X.restore();
+    }else{
+      X.save();X.translate(p.x,p.y);X.rotate(p.rotation);
+      X.strokeStyle='#cfc';X.lineWidth=2;
+      X.beginPath();X.moveTo(-7,0);X.lineTo(7,0);X.moveTo(5,-3);X.lineTo(7,0);X.lineTo(5,3);X.stroke();
+      X.restore();
+    }
   });
 }
 
