@@ -22,7 +22,7 @@ function resize(){
   C.width=W*dpr;C.height=H*dpr;
   X.setTransform(dpr,0,0,dpr,0,0);
   groundY=H*0.75;
-  sceneId=-1; // invalidate scene cache on resize
+  if(typeof sceneId!=='undefined') sceneId=-1;
 }
 resize();window.addEventListener('resize',resize);
 
