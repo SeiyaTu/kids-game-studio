@@ -39,7 +39,8 @@ const CHARS=[
   {name:'胖墩',cost:80,hp:140,atk:1.1,spd:0.7,special:'相扑冲撞',specDesc:'前冲30伤害',headR:16,bodyW:4,limbW:3.5,limbLen:0.85,color:'#fff',accent:'#ffa'},
   {name:'忍者',cost:120,hp:80,atk:1.0,spd:1.4,special:'分身斩',specDesc:'3残影各8伤害',headR:11,bodyW:2,limbW:2,limbLen:1,color:'#fff',accent:'#f0f',doubleJump:true},
   {name:'大力士',cost:200,hp:120,atk:1.5,spd:0.6,special:'地面震波',specDesc:'全屏35伤害',headR:14,bodyW:4,limbW:3.5,limbLen:0.9,color:'#fff',accent:'#f80'},
-  {name:'功夫道长',cost:150,hp:100,atk:1.2,spd:0.9,special:'气功炮',specDesc:'远程气功弹40伤害',headR:12,bodyW:2.5,limbW:2.5,limbLen:1,color:'#fff',accent:'#0ff',hasBeard:true}
+  {name:'功夫道长',cost:150,hp:100,atk:1.2,spd:0.9,special:'气功炮',specDesc:'远程气功弹40伤害',headR:12,bodyW:2.5,limbW:2.5,limbLen:1,color:'#fff',accent:'#0ff',hasBeard:true},
+  {name:'剑道士',cost:180,hp:110,atk:1.4,spd:0.9,special:'居合斩',specDesc:'快速拔刀斩1.5x伤害',headR:12,bodyW:2.5,limbW:2.5,limbLen:1,color:'#fff',accent:'#c8f',hasSword:true,hasKendoHelmet:true}
 ];
 
 // ===== SAVE =====
@@ -307,6 +308,23 @@ class Fighter{
       }
     }
 
+    // kendo helmet for 剑道士
+    if(this.ch.hasKendoHelmet){
+      X.save();
+      X.strokeStyle=accentColor;X.lineWidth=2;
+      // men (面) helmet dome
+      X.beginPath();X.arc(headX,headY-hr*0.1,hr*1.25,Math.PI,0);X.stroke();
+      // face guard lines (mengane)
+      for(var gi=0;gi<4;gi++){
+        var gy2=headY-hr*0.2+gi*hr*0.35;
+        X.beginPath();X.moveTo(headX-hr*1.1,gy2);X.lineTo(headX+hr*1.1,gy2);X.stroke();
+      }
+      // chin flap
+      X.beginPath();X.moveTo(headX-hr*1.1,headY+hr*0.4);X.lineTo(headX-hr*0.8,headY+hr*1.0);
+      X.lineTo(headX+hr*0.8,headY+hr*1.0);X.lineTo(headX+hr*1.1,headY+hr*0.4);X.stroke();
+      X.restore();
+    }
+
     // fat belly for pang
     if(this.charIdx===2||(!this.isAI&&this.charIdx===2)){
       X.beginPath();X.arc((shoulderX+hipX)/2,(shoulderY+hipY)/2,14*s,0,Math.PI*2);
@@ -351,6 +369,33 @@ class Fighter{
     X.strokeStyle=baseColor;X.lineWidth=lw;
     const rLeg=drawLeg(j.rHip,j.rKnee,legU,legL,Math.PI/2-0.2);
     const lLeg=drawLeg(j.lHip,j.lKnee,legU,legL,Math.PI/2+0.2);
+
+    // sword for 剑道士
+    if(this.ch.hasSword){
+      X.save();
+      var swordLen=55*s;
+      var shandX=rArm.hx,shandY=rArm.hy;
+      var swordAngle;
+      if(this.anim==='punch'){swordAngle=f>0?-0.3:-Math.PI+0.3;}
+      else if(this.anim==='kick'){swordAngle=f>0?0.5:-Math.PI-0.5;}
+      else if(this.anim==='special'){swordAngle=f>0?-1.2:-Math.PI+1.2;swordLen=65*s;}
+      else{swordAngle=f>0?-0.8:-Math.PI+0.8;}
+      var stx=shandX+Math.cos(swordAngle)*swordLen;
+      var sty=shandY+Math.sin(swordAngle)*swordLen;
+      // blade
+      X.strokeStyle='#ddd';X.lineWidth=2.5;X.lineCap='round';
+      X.beginPath();X.moveTo(shandX,shandY);X.lineTo(stx,sty);X.stroke();
+      // tsuba (guard)
+      var tsubaX=shandX+Math.cos(swordAngle)*8*s;
+      var tsubaY=shandY+Math.sin(swordAngle)*8*s;
+      var tPerp=swordAngle+Math.PI/2;
+      X.strokeStyle='#fa0';X.lineWidth=3;
+      X.beginPath();X.moveTo(tsubaX+Math.cos(tPerp)*5*s,tsubaY+Math.sin(tPerp)*5*s);
+      X.lineTo(tsubaX-Math.cos(tPerp)*5*s,tsubaY-Math.sin(tPerp)*5*s);X.stroke();
+      // tip gleam
+      X.fillStyle='#fff';X.beginPath();X.arc(stx,sty,1.5*s,0,Math.PI*2);X.fill();
+      X.restore();
+    }
 
     // attack hitbox position
     this._punchPos={x:rArm.hx,y:rArm.hy};
@@ -613,15 +658,18 @@ function checkAttacks(attacker,defender){
   let hitPos,range;
   if(attacker.anim==='punch'){
     hitPos=attacker._punchPos||{x:attacker.x+attacker.facing*40*attacker.scale,y:attacker.y-50*attacker.scale};
-    range=30*attacker.scale;
+    range=(attacker.ch.hasSword?45:30)*attacker.scale;
   }else if(attacker.anim==='kick'){
     hitPos=attacker._kickPos||{x:attacker.x+attacker.facing*45*attacker.scale,y:attacker.y-20*attacker.scale};
-    range=35*attacker.scale;
+    range=(attacker.ch.hasSword?45:35)*attacker.scale;
   }else if(attacker.anim==='special'){
     // specials have bigger range or special behavior
     const ci=attacker.charIdx;
     if(ci===4){// earthquake - full screen
       hitPos={x:defender.x,y:defender.y};range=999;
+    }else if(ci===6){// 剑道士 居合斩 - wide sword arc, longer reach
+      hitPos={x:attacker.x+attacker.facing*60*attacker.scale,y:attacker.y-40*attacker.scale};
+      range=80*attacker.scale;
     }else if(ci===5){// 功夫道长 qi blast - spawn projectile
       if(!attacker.attackHit){
         const s=attacker.scale;
@@ -644,7 +692,7 @@ function checkAttacks(attacker,defender){
     else if(attacker.anim==='kick'){dmg=8*attacker.ch.atk;kb=attacker.facing*200*attacker.scale;}
     else{
       // special damage by character
-      const specDmg=[25,25,30,24,35,40];
+      const specDmg=[25,25,30,24,35,40,32];
       dmg=specDmg[attacker.charIdx]*attacker.ch.atk;
       kb=attacker.facing*250*attacker.scale;
     }
@@ -894,10 +942,10 @@ function drawMenu(){
   }else if(state==='stageSelect'){
     X.font=`bold ${24}px sans-serif`;X.fillStyle='#fff';X.textAlign='center';
     X.fillText('选择关卡',W/2,35);
-    const sw=60,sh=60,gap=10;
+    const sw=55,sh=55,gap=8;
     const cols=5;
     const startX=(W-(cols*(sw+gap)-gap))/2;
-    for(let i=0;i<10;i++){
+    for(let i=0;i<20;i++){
       const col=i%cols,row=Math.floor(i/cols);
       const sx=startX+col*(sw+gap),sy=60+row*(sh+gap);
       const unlck=i<=stageProgress;
@@ -977,8 +1025,8 @@ function doAction(act){
   else if(act.startsWith('stage_')){
     currentStage=parseInt(act.split('_')[1]);
     currentScene=Math.floor(currentStage/2)%5;
-    difficulty=Math.min(2,Math.floor(currentStage/4));
-    gameMode='story';startMatch(selectedChar,currentStage%5);
+    difficulty=Math.min(2,Math.floor(currentStage/7));
+    gameMode='story';startMatch(selectedChar,currentStage%CHARS.length);
   }
   else if(act.startsWith('diff_')){difficulty=parseInt(act.split('_')[1]);}
   else if(act.startsWith('fenemy_')){freeEnemy=parseInt(act.split('_')[1]);}
@@ -986,7 +1034,7 @@ function doAction(act){
   else if(act==='afterMatch'){
     if(gameMode==='story'&&playerWins>=2){
       const reward=5+currentStage*1;coins+=reward;
-      if(currentStage>=stageProgress)stageProgress=Math.min(9,currentStage+1);
+      if(currentStage>=stageProgress)stageProgress=Math.min(19,currentStage+1);
       save();
     }
     state='menu';
@@ -1003,6 +1051,12 @@ function startRound(pChar,eChar){
   player=new Fighter(pChar,W*0.3,1,false);
   enemy=new Fighter(eChar,W*0.7,-1,true);
   enemy.aiDifficulty=difficulty;
+  // Scale enemy stats for higher story stages
+  if(gameMode==='story'&&currentStage>0){
+    var stageScale=1+currentStage*0.08;
+    enemy.hp=Math.round(enemy.maxHp*stageScale);
+    enemy.maxHp=enemy.hp;
+  }
   roundTimer=60;particles=[];hitEffects=[];projectiles=[];
   slowMo=0;screenFlash=0;koText.active=false;
   comboDisplay={count:0,timer:0,x:0,y:0};
