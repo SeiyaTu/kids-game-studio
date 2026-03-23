@@ -235,99 +235,147 @@ function drawCuteBunny(x,y,size,variant,happy,angry,animT,_ctx){
   var ay=y+bounce;
   
   c.save();
-  // Body
   var bodyColor=v.body==='rainbow'?'#ffccee':v.body;
+  
+  // Cotton tail (behind body)
+  c.fillStyle='#fff';
+  c.beginPath();c.arc(x,ay+s*0.3,s*0.09,0,Math.PI*2);c.fill();
+  c.fillStyle='rgba(255,255,255,0.7)';
+  c.beginPath();c.arc(x-s*0.02,ay+s*0.28,s*0.06,0,Math.PI*2);c.fill();
+  
+  // Body (pear-shaped, smaller than head area)
   c.fillStyle=bodyColor;
   c.beginPath();
-  c.ellipse(x,ay,s*0.4,s*0.5,0,0,Math.PI*2);
+  c.ellipse(x,ay+s*0.15,s*0.3,s*0.32,0,0,Math.PI*2);
   c.fill();
   // Body highlight
-  c.fillStyle='rgba(255,255,255,0.35)';
+  c.fillStyle='rgba(255,255,255,0.3)';
   c.beginPath();
-  c.ellipse(x-s*0.1,ay-s*0.15,s*0.2,s*0.25,-.3,0,Math.PI*2);
+  c.ellipse(x-s*0.08,ay+s*0.05,s*0.15,s*0.18,-.3,0,Math.PI*2);
   c.fill();
-  // Body shadow
-  c.fillStyle='rgba(0,0,0,0.08)';
-  c.beginPath();
-  c.ellipse(x,ay+s*0.25,s*0.35,s*0.15,0,0,Math.PI);
-  c.fill();
+  
   // Belly
   c.fillStyle='rgba(255,255,255,0.5)';
   c.beginPath();
-  c.ellipse(x,ay+s*0.1,s*0.22,s*0.25,0,0,Math.PI*2);
+  c.ellipse(x,ay+s*0.2,s*0.18,s*0.2,0,0,Math.PI*2);
   c.fill();
-  // Spots (粉花)
+  
+  // Spots
   if(v.spots){
     c.fillStyle='#f48fb1';
     for(var si=0;si<4;si++){
-      var sx=x+Math.cos(si*1.8)*s*0.2;
-      var sy=ay-s*0.1+Math.sin(si*2.1)*s*0.2;
-      c.beginPath();c.arc(sx,sy,s*0.05,0,Math.PI*2);c.fill();
+      var sx=x+Math.cos(si*1.8)*s*0.15;
+      var sy=ay+s*0.1+Math.sin(si*2.1)*s*0.15;
+      c.beginPath();c.arc(sx,sy,s*0.04,0,Math.PI*2);c.fill();
     }
   }
+  
   // Rainbow shimmer
   if(v.body==='rainbow'){
-    var rg=c.createLinearGradient(x-s*0.4,ay-s*0.5,x+s*0.4,ay+s*0.5);
+    var rg=c.createLinearGradient(x-s*0.3,ay-s*0.3,x+s*0.3,ay+s*0.4);
     rg.addColorStop(0,'rgba(255,0,0,0.15)');rg.addColorStop(0.2,'rgba(255,165,0,0.15)');
     rg.addColorStop(0.4,'rgba(255,255,0,0.15)');rg.addColorStop(0.6,'rgba(0,255,0,0.15)');
     rg.addColorStop(0.8,'rgba(0,100,255,0.15)');rg.addColorStop(1,'rgba(128,0,255,0.15)');
     c.fillStyle=rg;
-    c.beginPath();c.ellipse(x,ay,s*0.4,s*0.5,0,0,Math.PI*2);c.fill();
+    c.beginPath();c.ellipse(x,ay+s*0.15,s*0.3,s*0.32,0,0,Math.PI*2);c.fill();
   }
-  // Ears
+  
+  // Feet with paw pads
+  var darkBody=bodyColor==='#444'?'#666':bodyColor;
+  for(var fi=-1;fi<=1;fi+=2){
+    // Foot
+    c.fillStyle=darkBody;
+    c.beginPath();c.ellipse(x+fi*s*0.18,ay+s*0.46,s*0.12,s*0.06,fi*0.1,0,Math.PI*2);c.fill();
+    // Paw pads
+    c.fillStyle=v.ear||'#ffb6c1';
+    c.beginPath();c.arc(x+fi*s*0.18,ay+s*0.47,s*0.04,0,Math.PI*2);c.fill();
+    c.beginPath();c.arc(x+fi*(s*0.18-s*0.04),ay+s*0.44,s*0.02,0,Math.PI*2);c.fill();
+    c.beginPath();c.arc(x+fi*(s*0.18+s*0.04),ay+s*0.44,s*0.02,0,Math.PI*2);c.fill();
+  }
+  
+  // Arms
+  c.fillStyle=bodyColor==='#444'?'#555':bodyColor;
+  for(var ai=-1;ai<=1;ai+=2){
+    c.beginPath();c.ellipse(x+ai*s*0.32,ay+s*0.1,s*0.07,s*0.12,ai*0.3,0,Math.PI*2);c.fill();
+  }
+  
+  // Head (big round, distinct from body)
+  c.fillStyle=bodyColor;
+  c.beginPath();
+  c.arc(x,ay-s*0.18,s*0.28,0,Math.PI*2);
+  c.fill();
+  // Head highlight
+  c.fillStyle='rgba(255,255,255,0.3)';
+  c.beginPath();
+  c.arc(x-s*0.08,ay-s*0.28,s*0.12,0,Math.PI*2);
+  c.fill();
+  
+  // Ears with gradient
   for(var ei=-1;ei<=1;ei+=2){
-    var ex=x+ei*s*0.15;
-    var ey=ay-s*0.65;
+    var ex=x+ei*s*0.16;
+    var ey=ay-s*0.55;
+    var earTilt=ei*0.2;
     // Outer ear
-    c.fillStyle=bodyColor==='#444'?'#555':bodyColor;
-    c.beginPath();c.ellipse(ex,ey,s*0.1,s*0.25,ei*0.15,0,Math.PI*2);c.fill();
-    // Inner ear
-    c.fillStyle=v.ear;
-    c.beginPath();c.ellipse(ex,ey+s*0.02,s*0.06,s*0.18,ei*0.15,0,Math.PI*2);c.fill();
+    var outerColor=bodyColor==='#444'?'#555':bodyColor;
+    c.fillStyle=outerColor;
+    c.beginPath();c.ellipse(ex,ey,s*0.1,s*0.25,earTilt,0,Math.PI*2);c.fill();
+    // Inner ear gradient
+    var earGrad=c.createLinearGradient(ex,ey-s*0.2,ex,ey+s*0.15);
+    earGrad.addColorStop(0,v.ear||'#ffb6c1');
+    earGrad.addColorStop(1,'rgba(255,182,193,0.3)');
+    c.fillStyle=earGrad;
+    c.beginPath();c.ellipse(ex,ey+s*0.02,s*0.06,s*0.18,earTilt,0,Math.PI*2);c.fill();
     // Ear highlight
-    c.fillStyle='rgba(255,255,255,0.3)';
-    c.beginPath();c.ellipse(ex-ei*s*0.02,ey-s*0.05,s*0.03,s*0.1,ei*0.15,0,Math.PI*2);c.fill();
+    c.fillStyle='rgba(255,255,255,0.25)';
+    c.beginPath();c.ellipse(ex-ei*s*0.02,ey-s*0.06,s*0.03,s*0.1,earTilt,0,Math.PI*2);c.fill();
   }
+  
   // Eyes
-  var eyeY=ay-s*0.12;
+  var eyeY=ay-s*0.2;
   for(var ei2=-1;ei2<=1;ei2+=2){
-    var exx=x+ei2*s*0.13;
+    var exx=x+ei2*s*0.12;
+    // Eye white
+    c.fillStyle='#fff';
+    c.beginPath();c.ellipse(exx,eyeY,s*0.07,s*0.08,0,0,Math.PI*2);c.fill();
+    // Pupil
     c.fillStyle=angry?'#d32f2f':'#333';
-    c.beginPath();c.arc(exx,eyeY,s*0.06,0,Math.PI*2);c.fill();
+    c.beginPath();c.arc(exx,eyeY+s*0.01,s*0.05,0,Math.PI*2);c.fill();
     // Reflection
     c.fillStyle='#fff';
     c.beginPath();c.arc(exx+s*0.02,eyeY-s*0.02,s*0.025,0,Math.PI*2);c.fill();
   }
+  
+  // Nose (pink triangle)
+  c.fillStyle='#f48fb1';
+  c.beginPath();
+  c.moveTo(x,ay-s*0.08);
+  c.lineTo(x-s*0.04,ay-s*0.12);
+  c.lineTo(x+s*0.04,ay-s*0.12);
+  c.closePath();
+  c.fill();
+  
   // Mouth
   if(angry){
     c.strokeStyle='#d32f2f';c.lineWidth=s*0.02;
-    c.beginPath();c.moveTo(x-s*0.06,ay+s*0.02);c.lineTo(x,ay+s*0.06);c.lineTo(x+s*0.06,ay+s*0.02);c.stroke();
+    c.beginPath();c.moveTo(x-s*0.06,ay-s*0.03);c.lineTo(x,ay+s*0.01);c.lineTo(x+s*0.06,ay-s*0.03);c.stroke();
   }else{
     // ω mouth
     c.strokeStyle='#e91e63';c.lineWidth=s*0.02;c.lineCap='round';
     c.beginPath();
-    c.moveTo(x-s*0.08,ay+s*0.02);
-    c.quadraticCurveTo(x-s*0.04,ay+s*0.08,x,ay+s*0.03);
-    c.quadraticCurveTo(x+s*0.04,ay+s*0.08,x+s*0.08,ay+s*0.02);
+    c.moveTo(x-s*0.07,ay-s*0.05);
+    c.quadraticCurveTo(x-s*0.03,ay+s*0.02,x,ay-s*0.04);
+    c.quadraticCurveTo(x+s*0.03,ay+s*0.02,x+s*0.07,ay-s*0.05);
     c.stroke();
   }
+  
   // Cheeks
-  var cg1=c.createRadialGradient(x-s*0.22,ay,0,x-s*0.22,ay,s*0.1);
+  var cg1=c.createRadialGradient(x-s*0.2,ay-s*0.1,0,x-s*0.2,ay-s*0.1,s*0.09);
   cg1.addColorStop(0,'rgba(255,130,171,0.6)');cg1.addColorStop(1,'rgba(255,130,171,0)');
-  c.fillStyle=cg1;c.fillRect(x-s*0.32,ay-s*0.1,s*0.2,s*0.2);
-  var cg2=c.createRadialGradient(x+s*0.22,ay,0,x+s*0.22,ay,s*0.1);
+  c.fillStyle=cg1;c.fillRect(x-s*0.29,ay-s*0.19,s*0.18,s*0.18);
+  var cg2=c.createRadialGradient(x+s*0.2,ay-s*0.1,0,x+s*0.2,ay-s*0.1,s*0.09);
   cg2.addColorStop(0,'rgba(255,130,171,0.6)');cg2.addColorStop(1,'rgba(255,130,171,0)');
-  c.fillStyle=cg2;c.fillRect(x+s*0.12,ay-s*0.1,s*0.2,s*0.2);
-  // Arms
-  c.fillStyle=bodyColor==='#444'?'#555':bodyColor;
-  for(var ai=-1;ai<=1;ai+=2){
-    c.beginPath();c.ellipse(x+ai*s*0.38,ay+s*0.05,s*0.07,s*0.12,ai*0.3,0,Math.PI*2);c.fill();
-  }
-  // Feet
-  c.fillStyle=bodyColor==='#444'?'#666':bodyColor;
-  for(var fi=-1;fi<=1;fi+=2){
-    c.beginPath();c.ellipse(x+fi*s*0.15,ay+s*0.48,s*0.1,s*0.06,0,0,Math.PI*2);c.fill();
-  }
+  c.fillStyle=cg2;c.fillRect(x+s*0.11,ay-s*0.19,s*0.18,s*0.18);
+  
   c.restore();
 }
 
@@ -1137,9 +1185,10 @@ function startBattle(level){
 }
 
 function showBattleUI(){
-  var html='<div class="hud"><div>⚔️ 第'+battleLevel+'关 | 波次: '+(battleWave+1)+'/2 | ❤️ '+castleHP+'</div>';
-  html+='<div>💰 '+coins+'</div></div>';
-  html+='<div class="hud" style="top:auto;bottom:50px;justify-content:center"><div class="hud-btn" onclick="startWave()" id="startWaveBtn">'+(waveState==='prep'?'▶️ 开始':'战斗中...')+'</div>';
+  var html='<div class="hud"><div id="hud-info">⚔️ 第'+battleLevel+'关 | 波次: '+(battleWave+1)+'/2 | ❤️ '+castleHP+'</div>';
+  html+='<div id="hud-coins">💰 '+coins+'</div></div>';
+  html+='<div style="pointer-events:auto;position:absolute;top:40px;right:12px;display:flex;gap:6px">';
+  html+='<div class="hud-btn" onclick="startWave()" id="startWaveBtn">'+(waveState==='prep'?'▶️ 开始':'战斗中...')+'</div>';
   html+=' <div class="hud-btn" onclick="gameState=\'menu\';showMainMenu()">🏃 撤退</div></div>';
   // Trap bar
   html+='<div class="bottom-bar" id="trapBar">';
@@ -1148,16 +1197,32 @@ function showBattleUI(){
     var key=allTraps[i];
     var td=TRAP_DEFS[key];
     var avail=td.free||unlockedTraps.indexOf(key)>=0;
-    html+='<div class="trap-btn'+(selectedTrap===key?' sel':'')+(avail?'':' locked')+'" onclick="selectTrap(\''+key+'\')">'+
+    html+='<div class="trap-btn'+(selectedTrap===key?' sel':'')+(avail?'':' locked')+'" data-trap="'+key+'" onclick="selectTrap(\''+key+'\')">'+
       td.icon+'<span>'+td.cost+'💰</span></div>';
   }
   html+='</div>';
   ui.innerHTML=html;
 }
 
+function updateBattleHUD(){
+  var infoEl=document.getElementById('hud-info');
+  var coinsEl=document.getElementById('hud-coins');
+  var waveBtn=document.getElementById('startWaveBtn');
+  if(infoEl)infoEl.textContent='⚔️ 第'+battleLevel+'关 | 波次: '+(battleWave+1)+'/2 | ❤️ '+castleHP;
+  if(coinsEl)coinsEl.textContent='💰 '+coins;
+  if(waveBtn)waveBtn.textContent=(waveState==='prep'?'▶️ 开始':'战斗中...');
+}
+
 function selectTrap(key){
   selectedTrap=(selectedTrap===key)?null:key;
-  showBattleUI();
+  var btns=document.querySelectorAll('.trap-btn');
+  for(var i=0;i<btns.length;i++){
+    if(btns[i].getAttribute('data-trap')===selectedTrap){
+      btns[i].classList.add('sel');
+    }else{
+      btns[i].classList.remove('sel');
+    }
+  }
 }
 
 function startWave(){
@@ -1377,7 +1442,7 @@ function updateBattle(dt){
     }
   }
   
-  showBattleUI();
+  updateBattleHUD();
 }
 
 function startTrapAttack(trap,enemy,dmgBonus){
@@ -1434,7 +1499,7 @@ function handleBattleClick(cx,cy){
         type:selectedTrap,x:cx,y:fl.y+fl.h*0.7,
         hp:td.hp,maxHp:td.hp,atkTimer:0,alive:true
       });
-      showBattleUI();
+      updateBattleHUD();
       return;
     }
   }

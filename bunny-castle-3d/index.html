@@ -26,6 +26,8 @@ canvas{display:block}
 .btn-sm{padding:8px 18px;font-size:14px}
 .screen{position:absolute;top:0;left:0;width:100%;height:100%;display:none;justify-content:center;align-items:center;flex-direction:column}
 .screen.active{display:flex}
+#screen-battle.active{pointer-events:none}
+#screen-battle .hud>*,#screen-battle .trap-bar,#screen-battle .result-panel,#screen-battle .result-panel *{pointer-events:auto}
 .bunny-choice{display:inline-block;width:70px;height:70px;border-radius:50%;margin:8px;cursor:pointer;border:4px solid transparent;transition:border-color 0.2s,transform 0.2s}
 .bunny-choice:hover{transform:scale(1.15)}
 .bunny-choice.selected{border-color:#ff6b9d;transform:scale(1.15)}
@@ -271,47 +273,98 @@ initThree();
 function createBunny(variant, scale = 1) {
   const v = BUNNY_VARIANTS.find(b => b.id === variant) || BUNNY_VARIANTS[0];
   const g = new THREE.Group();
-  // Body
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.6 * scale, 16, 12), new THREE.MeshLambertMaterial({ color: v.color }));
+  const s = scale;
+  const bodyMat = new THREE.MeshLambertMaterial({ color: v.color });
+  // Body (lower, rounder)
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.55*s, 16, 14), bodyMat);
+  body.scale.set(1, 0.9, 0.85);
+  body.position.set(0, -0.15*s, 0);
   g.add(body);
-  // Ears
-  const earGeo = new THREE.SphereGeometry(0.15 * scale, 8, 8);
-  earGeo.scale(1, 2.5, 0.6);
+  // Head (distinct, on top)
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.4*s, 16, 14), bodyMat);
+  head.position.set(0, 0.4*s, 0.1*s);
+  g.add(head);
+  // Long floppy ears - outer
+  const earGeo = new THREE.SphereGeometry(0.12*s, 8, 8);
+  earGeo.scale(1, 3.2, 0.5);
   const earMat = new THREE.MeshLambertMaterial({ color: v.earColor || v.color });
   const earL = new THREE.Mesh(earGeo, earMat);
-  earL.position.set(-0.2 * scale, 0.9 * scale, 0);
-  earL.rotation.z = 0.15;
+  earL.position.set(-0.18*s, 0.95*s, 0.05*s);
+  earL.rotation.z = 0.2; earL.rotation.x = -0.15;
   g.add(earL);
   const earR = new THREE.Mesh(earGeo.clone(), earMat);
-  earR.position.set(0.2 * scale, 0.9 * scale, 0);
-  earR.rotation.z = -0.15;
+  earR.position.set(0.18*s, 0.95*s, 0.05*s);
+  earR.rotation.z = -0.2; earR.rotation.x = -0.15;
   g.add(earR);
-  // Eyes
-  const eyeGeo = new THREE.SphereGeometry(0.08 * scale, 8, 8);
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
-  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeL.position.set(-0.18 * scale, 0.15 * scale, 0.52 * scale);
-  g.add(eyeL);
-  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeR.position.set(0.18 * scale, 0.15 * scale, 0.52 * scale);
-  g.add(eyeR);
-  // Cheeks
-  const cheekGeo = new THREE.SphereGeometry(0.1 * scale, 8, 8);
-  const cheekMat = new THREE.MeshLambertMaterial({ color: v.cheek, transparent: true, opacity: 0.6 });
-  const cL = new THREE.Mesh(cheekGeo, cheekMat);
-  cL.position.set(-0.3 * scale, 0.0, 0.45 * scale);
-  g.add(cL);
-  const cR = new THREE.Mesh(cheekGeo, cheekMat);
-  cR.position.set(0.3 * scale, 0.0, 0.45 * scale);
-  g.add(cR);
-  // Nose
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.04*scale,6,6), new THREE.MeshLambertMaterial({color:0xff9999}));
-  nose.position.set(0, 0.05*scale, 0.58*scale);
+  // Ear inner color (pink)
+  const innerEarGeo = new THREE.SphereGeometry(0.07*s, 8, 8);
+  innerEarGeo.scale(1, 3.0, 0.3);
+  const innerEarMat = new THREE.MeshLambertMaterial({ color: 0xffaabb });
+  const iEarL = new THREE.Mesh(innerEarGeo, innerEarMat);
+  iEarL.position.set(-0.18*s, 0.95*s, 0.08*s);
+  iEarL.rotation.z = 0.2; iEarL.rotation.x = -0.15;
+  g.add(iEarL);
+  const iEarR = new THREE.Mesh(innerEarGeo.clone(), innerEarMat);
+  iEarR.position.set(0.18*s, 0.95*s, 0.08*s);
+  iEarR.rotation.z = -0.2; iEarR.rotation.x = -0.15;
+  g.add(iEarR);
+  // Eyes (white base + black pupil)
+  const eyeWhiteGeo = new THREE.SphereGeometry(0.09*s, 8, 8);
+  const eyeWhiteMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const ewL = new THREE.Mesh(eyeWhiteGeo, eyeWhiteMat);
+  ewL.position.set(-0.15*s, 0.45*s, 0.42*s);
+  g.add(ewL);
+  const ewR = new THREE.Mesh(eyeWhiteGeo.clone(), eyeWhiteMat);
+  ewR.position.set(0.15*s, 0.45*s, 0.42*s);
+  g.add(ewR);
+  const pupilGeo = new THREE.SphereGeometry(0.05*s, 8, 8);
+  const pupilMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  const pL = new THREE.Mesh(pupilGeo, pupilMat);
+  pL.position.set(-0.14*s, 0.45*s, 0.49*s);
+  g.add(pL);
+  const pR = new THREE.Mesh(pupilGeo.clone(), pupilMat);
+  pR.position.set(0.14*s, 0.45*s, 0.49*s);
+  g.add(pR);
+  // Pink nose (small cone pointing forward)
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.05*s, 0.08*s, 6), new THREE.MeshLambertMaterial({color:0xff7799}));
+  nose.rotation.x = Math.PI/2;
+  nose.position.set(0, 0.35*s, 0.52*s);
   g.add(nose);
-  // Tail
-  const tail = new THREE.Mesh(new THREE.SphereGeometry(0.15*scale,8,8), new THREE.MeshLambertMaterial({color:v.color}));
-  tail.position.set(0, -0.1*scale, -0.55*scale);
+  // Cheek blush
+  const cheekGeo = new THREE.SphereGeometry(0.09*s, 8, 8);
+  const cheekMat = new THREE.MeshLambertMaterial({ color: v.cheek, transparent: true, opacity: 0.5 });
+  const cL = new THREE.Mesh(cheekGeo, cheekMat);
+  cL.position.set(-0.28*s, 0.32*s, 0.35*s);
+  g.add(cL);
+  const cR = new THREE.Mesh(cheekGeo.clone(), cheekMat);
+  cR.position.set(0.28*s, 0.32*s, 0.35*s);
+  g.add(cR);
+  // Cotton tail
+  const tail = new THREE.Mesh(new THREE.SphereGeometry(0.14*s, 8, 8), new THREE.MeshLambertMaterial({color:0xffffff}));
+  tail.position.set(0, -0.15*s, -0.55*s);
   g.add(tail);
+  // Paws (front)
+  const pawMat = new THREE.MeshLambertMaterial({ color: v.color });
+  const pawPadMat = new THREE.MeshLambertMaterial({ color: 0xffaacc });
+  for (let dx of [-0.22, 0.22]) {
+    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.1*s, 8, 8), pawMat);
+    paw.scale.set(1, 0.7, 1.2);
+    paw.position.set(dx*s, -0.55*s, 0.15*s);
+    g.add(paw);
+    const pad = new THREE.Mesh(new THREE.SphereGeometry(0.05*s, 6, 6), pawPadMat);
+    pad.position.set(dx*s, -0.6*s, 0.22*s);
+    g.add(pad);
+  }
+  // Paws (back)
+  for (let dx of [-0.25, 0.25]) {
+    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.12*s, 8, 8), pawMat);
+    paw.scale.set(1, 0.6, 1.3);
+    paw.position.set(dx*s, -0.58*s, -0.15*s);
+    g.add(paw);
+    const pad = new THREE.Mesh(new THREE.SphereGeometry(0.06*s, 6, 6), pawPadMat);
+    pad.position.set(dx*s, -0.63*s, -0.08*s);
+    g.add(pad);
+  }
   g.userData.variant = v;
   return g;
 }
@@ -354,49 +407,277 @@ function createEnemy(type, scaleMult = 1) {
   const def = ENEMY_DEFS[type];
   const g = new THREE.Group();
   const s = def.scale * scaleMult;
-  const mat = new THREE.MeshLambertMaterial({ color: def.color });
-  if (def.type === 'cube') {
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.7*s, 0.7*s, 0.7*s), mat);
+
+  if (type === 'wolf') {
+    // Gray wolf with pointy ears, snout, bushy tail, 4 legs
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0x777788 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.4*s, 12, 10), bodyMat);
+    body.scale.set(1.3, 0.9, 0.9);
     g.add(body);
-  } else if (def.type === 'flat') {
-    const body = new THREE.Mesh(new THREE.SphereGeometry(0.5*s, 12, 8), mat);
-    body.scale.set(1.2, 0.6, 1.2);
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.25*s, 10, 10), bodyMat);
+    head.position.set(0, 0.25*s, 0.35*s);
+    g.add(head);
+    // Snout (elongated cone)
+    const snout = new THREE.Mesh(new THREE.ConeGeometry(0.1*s, 0.25*s, 8), new THREE.MeshLambertMaterial({color:0x999999}));
+    snout.rotation.x = Math.PI/2;
+    snout.position.set(0, 0.2*s, 0.6*s);
+    g.add(snout);
+    // Nose tip
+    const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.04*s,6,6), new THREE.MeshBasicMaterial({color:0x222222}));
+    noseTip.position.set(0, 0.2*s, 0.73*s);
+    g.add(noseTip);
+    // Pointy ears
+    const earMat = new THREE.MeshLambertMaterial({ color: 0x666677 });
+    for (let dx of [-0.12, 0.12]) {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.07*s, 0.2*s, 4), earMat);
+      ear.position.set(dx*s, 0.48*s, 0.3*s);
+      g.add(ear);
+    }
+    // Fierce yellow eyes
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffdd00 });
+    for (let dx of [-0.1, 0.1]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.04*s,6,6), eyeMat);
+      eye.position.set(dx*s, 0.3*s, 0.55*s);
+      g.add(eye);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.02*s,4,4), new THREE.MeshBasicMaterial({color:0x111111}));
+      pupil.position.set(dx*s, 0.3*s, 0.58*s);
+      g.add(pupil);
+    }
+    // Bushy tail
+    const tail = new THREE.Mesh(new THREE.SphereGeometry(0.15*s,8,8), bodyMat);
+    tail.scale.set(0.8, 0.8, 1.5);
+    tail.position.set(0, 0.1*s, -0.55*s);
+    g.add(tail);
+    // 4 legs
+    const legMat = new THREE.MeshLambertMaterial({ color: 0x666677 });
+    for (let [dx,dz] of [[-0.2,0.15],[0.2,0.15],[-0.2,-0.15],[0.2,-0.15]]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05*s,0.06*s,0.3*s,6), legMat);
+      leg.position.set(dx*s, -0.4*s, dz*s);
+      g.add(leg);
+    }
+  } else if (type === 'fox') {
+    // Orange fox with fluffy tail, white chest, green eyes
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0xff8c00 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.35*s, 12, 10), bodyMat);
+    body.scale.set(1.2, 0.85, 0.85);
     g.add(body);
+    // White chest
+    const chest = new THREE.Mesh(new THREE.SphereGeometry(0.2*s,10,10), new THREE.MeshLambertMaterial({color:0xfff8ee}));
+    chest.position.set(0, -0.05*s, 0.2*s);
+    g.add(chest);
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.22*s, 10, 10), bodyMat);
+    head.position.set(0, 0.25*s, 0.3*s);
+    g.add(head);
+    // Snout
+    const snout = new THREE.Mesh(new THREE.ConeGeometry(0.08*s, 0.2*s, 8), new THREE.MeshLambertMaterial({color:0xffaa44}));
+    snout.rotation.x = Math.PI/2;
+    snout.position.set(0, 0.18*s, 0.52*s);
+    g.add(snout);
+    const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.03*s,6,6), new THREE.MeshBasicMaterial({color:0x222222}));
+    noseTip.position.set(0, 0.18*s, 0.63*s);
+    g.add(noseTip);
+    // Big triangular ears with dark inner
+    for (let dx of [-0.12, 0.12]) {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.09*s, 0.22*s, 4), bodyMat);
+      ear.position.set(dx*s, 0.48*s, 0.25*s);
+      g.add(ear);
+      const earInner = new THREE.Mesh(new THREE.ConeGeometry(0.05*s, 0.15*s, 4), new THREE.MeshLambertMaterial({color:0x553300}));
+      earInner.position.set(dx*s, 0.47*s, 0.27*s);
+      g.add(earInner);
+    }
+    // Green sly eyes
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x44dd44 });
+    for (let dx of [-0.09, 0.09]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.04*s,6,6), eyeMat);
+      eye.position.set(dx*s, 0.28*s, 0.48*s);
+      g.add(eye);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.02*s,4,4), new THREE.MeshBasicMaterial({color:0x111111}));
+      pupil.position.set(dx*s, 0.28*s, 0.51*s);
+      g.add(pupil);
+    }
+    // Big fluffy tail with white tip
+    const tailBase = new THREE.Mesh(new THREE.SphereGeometry(0.18*s,8,8), bodyMat);
+    tailBase.scale.set(0.7, 0.7, 1.8);
+    tailBase.position.set(0, 0.1*s, -0.5*s);
+    g.add(tailBase);
+    const tailTip = new THREE.Mesh(new THREE.SphereGeometry(0.1*s,8,8), new THREE.MeshLambertMaterial({color:0xffffff}));
+    tailTip.position.set(0, 0.12*s, -0.72*s);
+    g.add(tailTip);
+    // 4 legs
+    const legMat = new THREE.MeshLambertMaterial({ color: 0xdd7700 });
+    for (let [dx,dz] of [[-0.18,0.12],[0.18,0.12],[-0.18,-0.12],[0.18,-0.12]]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04*s,0.05*s,0.25*s,6), legMat);
+      leg.position.set(dx*s, -0.35*s, dz*s);
+      g.add(leg);
+    }
+  } else if (type === 'bear') {
+    // Brown bear, big round body, round ears, thick limbs
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.5*s, 14, 12), bodyMat);
+    body.scale.set(1, 1.1, 0.95);
+    g.add(body);
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.3*s, 12, 10), bodyMat);
+    head.position.set(0, 0.45*s, 0.25*s);
+    g.add(head);
+    // Tan snout area
+    const snout = new THREE.Mesh(new THREE.SphereGeometry(0.15*s,10,10), new THREE.MeshLambertMaterial({color:0xd4a574}));
+    snout.scale.set(1, 0.7, 0.8);
+    snout.position.set(0, 0.38*s, 0.48*s);
+    g.add(snout);
+    const noseTip = new THREE.Mesh(new THREE.SphereGeometry(0.05*s,6,6), new THREE.MeshBasicMaterial({color:0x222222}));
+    noseTip.position.set(0, 0.4*s, 0.58*s);
+    g.add(noseTip);
+    // Round ears
+    for (let dx of [-0.2, 0.2]) {
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.1*s,8,8), bodyMat);
+      ear.position.set(dx*s, 0.7*s, 0.2*s);
+      g.add(ear);
+      const earInner = new THREE.Mesh(new THREE.SphereGeometry(0.06*s,6,6), new THREE.MeshLambertMaterial({color:0xd4a574}));
+      earInner.position.set(dx*s, 0.7*s, 0.24*s);
+      g.add(earInner);
+    }
+    // Small angry eyes
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+    for (let dx of [-0.1, 0.1]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035*s,6,6), eyeMat);
+      eye.position.set(dx*s, 0.5*s, 0.5*s);
+      g.add(eye);
+    }
+    // Thick limbs
+    const limbMat = new THREE.MeshLambertMaterial({ color: 0x7a3c10 });
+    for (let [dx,dz] of [[-0.25,0.2],[0.25,0.2],[-0.25,-0.2],[0.25,-0.2]]) {
+      const limb = new THREE.Mesh(new THREE.CylinderGeometry(0.09*s,0.1*s,0.35*s,8), limbMat);
+      limb.position.set(dx*s, -0.5*s, dz*s);
+      g.add(limb);
+    }
+  } else if (type === 'slime') {
+    // Green flattened sphere, semi-transparent, goofy eyes
+    const slimeMat = new THREE.MeshLambertMaterial({ color: 0x00cc44, transparent: true, opacity: 0.75 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.45*s, 14, 12), slimeMat);
+    body.scale.set(1.2, 0.7, 1.2);
+    g.add(body);
+    g.userData.slimeBody = body;
+    // Goofy white eyes
+    for (let dx of [-0.15, 0.15]) {
+      const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.1*s,8,8), new THREE.MeshLambertMaterial({color:0xffffff}));
+      eyeWhite.position.set(dx*s, 0.15*s, 0.35*s);
+      g.add(eyeWhite);
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.05*s,6,6), new THREE.MeshBasicMaterial({color:0x111111}));
+      pupil.position.set(dx*s, 0.15*s, 0.43*s);
+      g.add(pupil);
+    }
+    // Goofy mouth
+    const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.06*s, 0.015*s, 6, 8, Math.PI), new THREE.MeshBasicMaterial({color:0x006622}));
+    mouth.rotation.x = Math.PI;
+    mouth.position.set(0, 0.0*s, 0.42*s);
+    g.add(mouth);
+  } else if (type === 'splitter') {
+    // Purple sphere with rotating spike cones, pink eyes
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0x9b59b6 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.35*s, 12, 10), bodyMat);
+    g.add(body);
+    // Spike ring (will rotate)
+    const spikeRing = new THREE.Group();
+    const spikeMat = new THREE.MeshLambertMaterial({ color: 0xcc77ee });
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.06*s, 0.2*s, 5), spikeMat);
+      spike.position.set(Math.cos(a)*0.4*s, 0, Math.sin(a)*0.4*s);
+      spike.rotation.z = -Math.cos(a) * 0.8;
+      spike.rotation.x = Math.sin(a) * 0.8;
+      spikeRing.add(spike);
+    }
+    g.add(spikeRing);
+    g.userData.spikeRing = spikeRing;
+    // Pink eyes
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff66aa });
+    for (let dx of [-0.1, 0.1]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05*s,6,6), eyeMat);
+      eye.position.set(dx*s, 0.1*s, 0.3*s);
+      g.add(eye);
+    }
+    // Split line indicator (thin bright line)
+    const lineGeo = new THREE.BoxGeometry(0.7*s, 0.02*s, 0.02*s);
+    const lineMat = new THREE.MeshBasicMaterial({ color: 0xff88cc, transparent: true, opacity: 0.6 });
+    const splitLine = new THREE.Mesh(lineGeo, lineMat);
+    splitLine.position.set(0, 0, 0.02*s);
+    g.add(splitLine);
+  } else if (type === 'boss') {
+    // Large red wolf-like body with golden crown, glowing eyes, fangs, aura
+    const bodyMat = new THREE.MeshLambertMaterial({ color: 0xcc0000 });
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.5*s, 14, 12), bodyMat);
+    body.scale.set(1.3, 1, 0.95);
+    g.add(body);
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.3*s, 12, 10), bodyMat);
+    head.position.set(0, 0.35*s, 0.4*s);
+    g.add(head);
+    // Snout
+    const snout = new THREE.Mesh(new THREE.ConeGeometry(0.12*s, 0.3*s, 8), new THREE.MeshLambertMaterial({color:0xaa0000}));
+    snout.rotation.x = Math.PI/2;
+    snout.position.set(0, 0.28*s, 0.7*s);
+    g.add(snout);
+    // Glowing red eyes
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    for (let dx of [-0.12, 0.12]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06*s,6,6), eyeMat);
+      eye.position.set(dx*s, 0.4*s, 0.63*s);
+      g.add(eye);
+    }
+    // White fang cones
+    const fangMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    for (let dx of [-0.06, 0.06]) {
+      const fang = new THREE.Mesh(new THREE.ConeGeometry(0.03*s, 0.12*s, 4), fangMat);
+      fang.rotation.x = Math.PI;
+      fang.position.set(dx*s, 0.15*s, 0.75*s);
+      g.add(fang);
+    }
+    // Pointy ears
+    for (let dx of [-0.15, 0.15]) {
+      const ear = new THREE.Mesh(new THREE.ConeGeometry(0.08*s, 0.22*s, 4), bodyMat);
+      ear.position.set(dx*s, 0.6*s, 0.35*s);
+      g.add(ear);
+    }
+    // Golden crown
+    const crownMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+    const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.18*s, 0.22*s, 0.1*s, 8), crownMat);
+    crownBase.position.set(0, 0.65*s, 0.35*s);
+    g.add(crownBase);
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.04*s, 0.12*s, 4), crownMat);
+      spike.position.set(Math.cos(a)*0.18*s, 0.75*s, 0.35*s + Math.sin(a)*0.18*s);
+      g.add(spike);
+    }
+    // 4 legs
+    const legMat = new THREE.MeshLambertMaterial({ color: 0x990000 });
+    for (let [dx,dz] of [[-0.25,0.2],[0.25,0.2],[-0.25,-0.2],[0.25,-0.2]]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.07*s,0.08*s,0.35*s,6), legMat);
+      leg.position.set(dx*s, -0.5*s, dz*s);
+      g.add(leg);
+    }
+    // Dark red aura
+    const auraMat = new THREE.MeshBasicMaterial({ color: 0x880000, transparent: true, opacity: 0.15 });
+    const aura = new THREE.Mesh(new THREE.SphereGeometry(0.9*s, 16, 12), auraMat);
+    g.add(aura);
+    // Bushy tail
+    const tail = new THREE.Mesh(new THREE.SphereGeometry(0.18*s,8,8), bodyMat);
+    tail.scale.set(0.8, 0.8, 1.5);
+    tail.position.set(0, 0.1*s, -0.6*s);
+    g.add(tail);
   } else {
+    // Fallback
+    const mat = new THREE.MeshLambertMaterial({ color: def.color });
     const body = new THREE.Mesh(new THREE.SphereGeometry(0.4*s, 12, 10), mat);
     g.add(body);
-  }
-  // Red eyes
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000, emissive: 0xff0000 });
-  const eGeo = new THREE.SphereGeometry(0.06*s, 6, 6);
-  const eL = new THREE.Mesh(eGeo, eyeMat);
-  eL.position.set(-0.15*s, 0.1*s, 0.35*s);
-  g.add(eL);
-  const eR = new THREE.Mesh(eGeo, eyeMat);
-  eR.position.set(0.15*s, 0.1*s, 0.35*s);
-  g.add(eR);
-  // Ears for wolf/fox
-  if (type === 'wolf' || type === 'fox') {
-    const earMat = new THREE.MeshLambertMaterial({ color: def.color });
-    const ear = new THREE.ConeGeometry(0.1*s, 0.25*s, 6);
-    const eaL = new THREE.Mesh(ear, earMat);
-    eaL.position.set(-0.2*s, 0.35*s, 0);
-    g.add(eaL);
-    const eaR = new THREE.Mesh(ear.clone(), earMat);
-    eaR.position.set(0.2*s, 0.35*s, 0);
-    g.add(eaR);
-  }
-  // Crown for boss
-  if (def.boss) {
-    const crownMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
-    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.2*s, 0.3*s, 0.2*s, 6), crownMat);
-    crown.position.set(0, 0.5*s, 0);
-    g.add(crown);
-    for (let i = 0; i < 5; i++) {
-      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.05*s, 0.15*s, 4), crownMat);
-      const a = (i / 5) * Math.PI * 2;
-      spike.position.set(Math.cos(a)*0.2*s, 0.65*s, Math.sin(a)*0.2*s);
-      g.add(spike);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    for (let dx of [-0.15, 0.15]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06*s,6,6), eyeMat);
+      eye.position.set(dx*s, 0.1*s, 0.35*s);
+      g.add(eye);
     }
   }
   return g;
@@ -1230,6 +1511,19 @@ function animate() {
       obj.rotation.y = Math.sin(Date.now() * 0.001) * 0.2;
     }
   });
+
+  // Animate slime jiggle and splitter spike rotation
+  if (battleState) {
+    for (const e of battleState.enemies) {
+      if (!e.alive) continue;
+      if (e.type === 'slime' && e.mesh.userData.slimeBody) {
+        e.mesh.userData.slimeBody.scale.y = 0.7 + Math.sin(Date.now() * 0.006) * 0.12;
+      }
+      if (e.type === 'splitter' && e.mesh.userData.spikeRing) {
+        e.mesh.userData.spikeRing.rotation.y += dt * 2;
+      }
+    }
+  }
 
   if (currentScreen === 'battle' && battleState) {
     updateBattle(dt);
