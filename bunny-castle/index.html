@@ -33,6 +33,12 @@ canvas{display:block;position:absolute;top:0;left:0}
 .hud-btn{pointer-events:auto;cursor:pointer;padding:4px 10px;background:rgba(255,255,255,0.2);border-radius:8px;font-size:13px}
 .bottom-bar{pointer-events:auto;position:absolute;bottom:0;left:0;width:100%;background:rgba(0,0,0,0.6);padding:6px;display:flex;justify-content:center;overflow-x:auto}
 .hidden{display:none!important}
+.achievement-toast{position:absolute;top:-60px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#ffd700,#ff8f00);color:#333;padding:10px 20px;border-radius:12px;font-size:14px;font-weight:bold;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:top 0.5s ease;z-index:100;white-space:nowrap;pointer-events:none}
+.achievement-toast.show{top:60px}
+.ach-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:10px 0}
+.ach-item{width:90px;padding:8px 4px;border-radius:12px;text-align:center;font-size:12px;background:#fce4ec}
+.ach-item.locked{background:#eee;color:#bbb}
+.ach-item .ach-icon{font-size:28px;display:block;margin-bottom:4px}
 </style>
 </head>
 <body>
@@ -49,6 +55,84 @@ var animFrame=0;
 var lastTime=0;
 var deltaTime=0;
 
+var SFX={ctx:null,muted:false,bgmOsc:null,bgmGain:null,
+  init:function(){if(this.ctx)return;try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}},
+  play:function(type){
+    if(this.muted||!this.ctx)return;
+    var c=this.ctx,now=c.currentTime;
+    if(type==='hit'){
+      var o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.value=150;
+      g.gain.setValueAtTime(0.15,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.1);
+      o.connect(g);g.connect(c.destination);o.start(now);o.stop(now+0.1);
+    }else if(type==='kill'){
+      var o=c.createOscillator(),g=c.createGain();o.type='sawtooth';
+      o.frequency.setValueAtTime(200,now);o.frequency.exponentialRampToValueAtTime(800,now+0.15);
+      g.gain.setValueAtTime(0.15,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.2);
+      o.connect(g);g.connect(c.destination);o.start(now);o.stop(now+0.2);
+    }else if(type==='coin'){
+      [523,659].forEach(function(f,i){
+        var o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0.12,now+i*0.1);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.1+0.15);
+        o.connect(g);g.connect(c.destination);o.start(now+i*0.1);o.stop(now+i*0.1+0.15);
+      });
+    }else if(type==='place'){
+      var o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=300;
+      g.gain.setValueAtTime(0.1,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.08);
+      o.connect(g);g.connect(c.destination);o.start(now);o.stop(now+0.08);
+    }else if(type==='wave'){
+      var o=c.createOscillator(),g=c.createGain();o.type='sawtooth';
+      o.frequency.setValueAtTime(100,now);o.frequency.exponentialRampToValueAtTime(600,now+0.5);
+      g.gain.setValueAtTime(0.12,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.5);
+      o.connect(g);g.connect(c.destination);o.start(now);o.stop(now+0.5);
+    }else if(type==='win'){
+      [523,659,784,1047].forEach(function(f,i){
+        var o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0.12,now+i*0.15);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.15+0.3);
+        o.connect(g);g.connect(c.destination);o.start(now+i*0.15);o.stop(now+i*0.15+0.3);
+      });
+    }else if(type==='lose'){
+      [400,300,200].forEach(function(f,i){
+        var o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0.12,now+i*0.2);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.2+0.35);
+        o.connect(g);g.connect(c.destination);o.start(now+i*0.2);o.stop(now+i*0.2+0.35);
+      });
+    }else if(type==='freeze'){
+      [1200,1500,1800].forEach(function(f,i){
+        var o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;
+        g.gain.setValueAtTime(0.06,now+i*0.05);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.05+0.2);
+        o.connect(g);g.connect(c.destination);o.start(now+i*0.05);o.stop(now+i*0.05+0.2);
+      });
+    }else if(type==='explode'){
+      var buf=c.createBuffer(1,c.sampleRate*0.3,c.sampleRate);var d=buf.getChannelData(0);
+      for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(c.sampleRate*0.1));
+      var n=c.createBufferSource(),g=c.createGain();n.buffer=buf;
+      g.gain.setValueAtTime(0.2,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.3);
+      n.connect(g);g.connect(c.destination);n.start(now);
+    }else if(type==='levelup'){
+      [523,659,784,1047,1319].forEach(function(f,i){
+        var o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=f;
+        g.gain.setValueAtTime(0.1,now+i*0.1);g.gain.exponentialRampToValueAtTime(0.001,now+i*0.1+0.25);
+        o.connect(g);g.connect(c.destination);o.start(now+i*0.1);o.stop(now+i*0.1+0.25);
+      });
+    }else if(type==='click'){
+      var o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=800;
+      g.gain.setValueAtTime(0.06,now);g.gain.exponentialRampToValueAtTime(0.001,now+0.04);
+      o.connect(g);g.connect(c.destination);o.start(now);o.stop(now+0.04);
+    }
+  },
+  startBGM:function(){
+    if(this.muted||!this.ctx||this.bgmOsc)return;
+    var c=this.ctx;
+    this.bgmGain=c.createGain();this.bgmGain.gain.value=0.03;this.bgmGain.connect(c.destination);
+    this.bgmOsc=c.createOscillator();this.bgmOsc.type='sine';this.bgmOsc.frequency.value=55;
+    this.bgmOsc.connect(this.bgmGain);this.bgmOsc.start();
+  },
+  stopBGM:function(){
+    if(this.bgmOsc){try{this.bgmOsc.stop();}catch(e){}this.bgmOsc=null;this.bgmGain=null;}
+  },
+  toggleMute:function(){this.muted=!this.muted;if(this.muted)this.stopBGM();}
+};
+
 // Pet/save state
 var pet=null,lamb=null,xp=0,coins=0,progress=0,happiness=0,lambHappiness=0;
 var unlockedTraps=[],petLevel=1,lambLevel=0,inventory={};
@@ -57,6 +141,71 @@ var placedTraps=[],waveTimer=0,waveState='prep';
 var selectedTrap=null,castleHP=100;
 var sparkles=[],floatTexts=[];
 var lastClickTime=0;
+
+// ============ ACHIEVEMENTS ============
+var ACHIEVEMENTS={
+  firstBlood:{name:'🗡️ 初次击杀',desc:'击败第一个敌人',icon:'🗡️'},
+  combo3:{name:'⚡ 三连杀',desc:'2秒内击杀3个敌人',icon:'⚡'},
+  combo5:{name:'🔥 五连杀',desc:'2秒内击杀5个敌人',icon:'🔥'},
+  perfectDefense:{name:'🛡️ 完美防守',desc:'不损失任何城堡HP通关',icon:'🛡️'},
+  richBunny:{name:'💰 富兔兔',desc:'累计获得500金币',icon:'💰'},
+  trapMaster:{name:'🔧 陷阱大师',desc:'一局放置10个陷阱',icon:'🔧'},
+  bossSlayer:{name:'👑 Boss终结者',desc:'击败第一个Boss',icon:'👑'},
+  level5:{name:'⭐ 初露锋芒',desc:'通过第5关',icon:'⭐'},
+  level10:{name:'🌟 守城达人',desc:'通过第10关',icon:'🌟'},
+  level15:{name:'🏆 传奇守护者',desc:'通过全部15关',icon:'🏆'},
+  maxPetLevel:{name:'❤️ 爱心满满',desc:'兔兔达到10级',icon:'❤️'},
+  allTraps:{name:'🎪 军火库',desc:'解锁全部陷阱',icon:'🎪'},
+  speedRun:{name:'⏱️ 闪电战',desc:'30秒内消灭一波敌人',icon:'⏱️'},
+  noTraps:{name:'🐰 裸奔勇士',desc:'不放陷阱通过一关',icon:'🐰'},
+  survivor:{name:'💪 绝地求生',desc:'城堡HP低于10时反杀通关',icon:'💪'}
+};
+var unlockedAchievements=[];
+var totalKills=0,comboKills=[],totalCoinsEarned=0,trapsPlacedThisBattle=0,waveStartTime=0;
+
+// Visual enhancements
+var screenShakeTimer=0,screenShakeIntensity=0;
+var bunnyMood='happy'; // happy, focused, worried, angry, sad
+var bunnyMoodTimer=0;
+var comboCount=0,comboTimer=0;
+var waveAnnounceText='',waveAnnounceTimer=0;
+var mouseX=0,mouseY=0;
+function loadAchievements(){try{unlockedAchievements=JSON.parse(localStorage.getItem('bunnyCastleAchievements'))||[];}catch(e){unlockedAchievements=[];}}
+function saveAchievements(){try{localStorage.setItem('bunnyCastleAchievements',JSON.stringify(unlockedAchievements));}catch(e){}}
+function checkAchievement(id){
+  if(!ACHIEVEMENTS[id])return;
+  if(unlockedAchievements.indexOf(id)>=0)return;
+  unlockedAchievements.push(id);
+  saveAchievements();
+  showAchievementToast(ACHIEVEMENTS[id]);
+  if(typeof SFX!=='undefined'&&SFX.play)try{SFX.play('levelup');}catch(e){}
+}
+function showAchievementToast(ach){
+  var el=document.createElement('div');
+  el.className='achievement-toast';
+  el.textContent='🏆 '+ach.name+' - '+ach.desc;
+  document.body.appendChild(el);
+  setTimeout(function(){el.classList.add('show');},50);
+  setTimeout(function(){el.classList.remove('show');setTimeout(function(){el.remove();},600);},3500);
+}
+function showAchievements(){
+  var prev=gameState;
+  gameState='achievements';
+  var count=unlockedAchievements.length;
+  var total=Object.keys(ACHIEVEMENTS).length;
+  var html='<div class="panel"><h2>🏆 成就 ('+count+'/'+total+')</h2><div class="ach-grid">';
+  var keys=Object.keys(ACHIEVEMENTS);
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i],a=ACHIEVEMENTS[k],unlocked=unlockedAchievements.indexOf(k)>=0;
+    html+='<div class="ach-item'+(unlocked?'':' locked')+'">';
+    html+='<span class="ach-icon">'+(unlocked?a.icon:'❓')+'</span>';
+    html+='<b>'+(unlocked?a.name:'???')+'</b><br>';
+    html+='<span>'+(unlocked?a.desc:'未解锁')+'</span></div>';
+  }
+  html+='</div><button class="btn btn-gray" onclick="showMainMenu()">← 返回</button></div>';
+  ui.innerHTML=html;
+}
+loadAchievements();
 
 // Castle geometry (computed on resize)
 var castle={floors:[],ladders:[],gate:{},paths:[]};
@@ -227,7 +376,7 @@ function drawGrad(c,x,y,w,h,c1,c2,vertical){
 }
 
 // ============ DRAW CUTE BUNNY ============
-function drawCuteBunny(x,y,size,variant,happy,angry,animT,_ctx){
+function drawCuteBunny(x,y,size,variant,happy,angry,animT,_ctx,mood){
   var c=_ctx||ctx;
   var v=BUNNY_VARIANTS[variant]||BUNNY_VARIANTS[0];
   var s=size;
@@ -354,12 +503,32 @@ function drawCuteBunny(x,y,size,variant,happy,angry,animT,_ctx){
   c.closePath();
   c.fill();
   
-  // Mouth
-  if(angry){
+  // Mouth (mood-aware)
+  if(mood==='angry'||angry){
     c.strokeStyle='#d32f2f';c.lineWidth=s*0.02;
     c.beginPath();c.moveTo(x-s*0.06,ay-s*0.03);c.lineTo(x,ay+s*0.01);c.lineTo(x+s*0.06,ay-s*0.03);c.stroke();
+  }else if(mood==='worried'){
+    // Wavy worried mouth
+    c.strokeStyle='#9e9e9e';c.lineWidth=s*0.02;c.lineCap='round';
+    c.beginPath();c.moveTo(x-s*0.05,ay-s*0.03);
+    c.quadraticCurveTo(x-s*0.02,ay-s*0.06,x,ay-s*0.03);
+    c.quadraticCurveTo(x+s*0.02,ay,x+s*0.05,ay-s*0.03);c.stroke();
+    // Sweat drop
+    c.fillStyle='rgba(100,181,246,0.7)';
+    c.beginPath();c.moveTo(x+s*0.2,ay-s*0.25);
+    c.quadraticCurveTo(x+s*0.23,ay-s*0.15,x+s*0.2,ay-s*0.1);
+    c.quadraticCurveTo(x+s*0.17,ay-s*0.15,x+s*0.2,ay-s*0.25);c.fill();
+  }else if(mood==='focused'){
+    // Determined straight mouth
+    c.strokeStyle='#e91e63';c.lineWidth=s*0.025;c.lineCap='round';
+    c.beginPath();c.moveTo(x-s*0.05,ay-s*0.04);c.lineTo(x+s*0.05,ay-s*0.04);c.stroke();
+  }else if(mood==='sad'){
+    // Sad downturned mouth
+    c.strokeStyle='#9e9e9e';c.lineWidth=s*0.02;c.lineCap='round';
+    c.beginPath();c.moveTo(x-s*0.06,ay-s*0.02);
+    c.quadraticCurveTo(x,ay-s*0.08,x+s*0.06,ay-s*0.02);c.stroke();
   }else{
-    // ω mouth
+    // Happy ω mouth
     c.strokeStyle='#e91e63';c.lineWidth=s*0.02;c.lineCap='round';
     c.beginPath();
     c.moveTo(x-s*0.07,ay-s*0.05);
@@ -767,16 +936,54 @@ function drawEnemy(c,e,t){
 // ============ DRAW CASTLE ============
 function drawCastle(){
   var c=ctx;
-  // Background gradient
+  // Day/Night cycle based on level
   var bg=c.createLinearGradient(0,0,0,H);
-  bg.addColorStop(0,'#1a237e');bg.addColorStop(0.5,'#283593');bg.addColorStop(1,'#3949ab');
+  var starCount=30,starSpeed=0.02,moonColor=null,moonSize=0,moonX=0,moonY=0;
+  if(battleLevel<=3){
+    // Sunset
+    bg.addColorStop(0,'#ff6f00');bg.addColorStop(0.4,'#ff8f00');bg.addColorStop(0.7,'#e65100');bg.addColorStop(1,'#4e342e');
+    starCount=8;
+    // Setting sun
+    moonColor='#ffeb3b';moonSize=H*0.08;moonX=W*0.8;moonY=H*0.15;
+  }else if(battleLevel<=7){
+    // Night
+    bg.addColorStop(0,'#0d1b2a');bg.addColorStop(0.5,'#1b2838');bg.addColorStop(1,'#1a237e');
+    starCount=50;
+    // Moon
+    moonColor='#e0e0e0';moonSize=H*0.05;moonX=W*0.85;moonY=H*0.1;
+  }else if(battleLevel<=12){
+    // Midnight eerie
+    bg.addColorStop(0,'#0a0a15');bg.addColorStop(0.5,'#0d1520');bg.addColorStop(1,'#1a2a1a');
+    starCount=60;starSpeed=0.05;
+    // Eerie green fog
+  }else{
+    // Blood moon
+    bg.addColorStop(0,'#1a0000');bg.addColorStop(0.4,'#2d0a0a');bg.addColorStop(1,'#3e1a1a');
+    starCount=40;
+    moonColor='#d32f2f';moonSize=H*0.1;moonX=W*0.75;moonY=H*0.12;
+  }
   c.fillStyle=bg;c.fillRect(0,0,W,H);
   
+  // Moon/Sun
+  if(moonColor){
+    var mg=c.createRadialGradient(moonX,moonY,moonSize*0.3,moonX,moonY,moonSize*1.5);
+    mg.addColorStop(0,moonColor);mg.addColorStop(0.4,moonColor.replace(')',',0.3)').replace('rgb','rgba'));mg.addColorStop(1,'rgba(0,0,0,0)');
+    c.fillStyle=mg;c.beginPath();c.arc(moonX,moonY,moonSize*1.5,0,Math.PI*2);c.fill();
+    c.fillStyle=moonColor;c.beginPath();c.arc(moonX,moonY,moonSize,0,Math.PI*2);c.fill();
+  }
+  
+  // Eerie fog for midnight levels
+  if(battleLevel>7&&battleLevel<=12){
+    var fg=c.createLinearGradient(0,H*0.6,0,H);
+    fg.addColorStop(0,'rgba(0,80,30,0)');fg.addColorStop(1,'rgba(0,80,30,0.15)');
+    c.fillStyle=fg;c.fillRect(0,H*0.6,W,H*0.4);
+  }
+  
   // Stars
-  for(var si=0;si<30;si++){
+  for(var si=0;si<starCount;si++){
     var sx=(si*137.5)%W,sy=(si*73.1)%H*0.3;
-    c.fillStyle='rgba(255,255,255,'+(0.3+Math.sin(animFrame*0.02+si)*0.3)+')';
-    c.beginPath();c.arc(sx,sy,1.5,0,Math.PI*2);c.fill();
+    c.fillStyle='rgba(255,255,255,'+(0.3+Math.sin(animFrame*starSpeed+si)*0.3)+')';
+    c.beginPath();c.arc(sx,sy,battleLevel>7?2:1.5,0,Math.PI*2);c.fill();
   }
   
   // Draw each floor
@@ -841,7 +1048,7 @@ function drawCastle(){
     // Floor 5 bunny + carrot
     if(fi===4&&pet){
       var bx2=fl.x+fl.w/2,by2=fl.y+fl.h*0.4;
-      drawCuteBunny(bx2,by2,fl.h*0.5,pet.variant,false,false,animFrame*0.016);
+      drawCuteBunny(bx2,by2,fl.h*0.5,pet.variant,bunnyMood==='happy',bunnyMood==='angry',animFrame*0.016,null,bunnyMood);
       // Full carrot (complete, not eaten!)
       var cx2=bx2+fl.h*0.4,cy2=by2+fl.h*0.05;
       var ch=fl.h*0.35;
@@ -973,12 +1180,14 @@ function showAdoptionScreen(){
     if(v3.cost>0){xp-=v3.cost;}
     pet={variant:selIdx,name:v3.name};
     happiness=5;petLevel=1;
+    SFX.init();
     saveSave();
     showMainMenu();
   });
 }
 
 function showMainMenu(){
+  SFX.init();
   gameState='menu';
   var html='<div class="panel"><h2>🐰 兔兔守城记</h2>';
   html+='<p>⭐ XP: '+xp+' | 💰 金币: '+coins+' | 🏆 关卡: '+(progress+1)+'/15</p>';
@@ -988,6 +1197,7 @@ function showMainMenu(){
   html+='<button class="btn btn-pink" onclick="showHome()">🏠 小屋</button>';
   html+='<button class="btn btn-blue" onclick="showShop()">🛒 商场</button>';
   html+='<button class="btn btn-green" onclick="showLevelSelect()">⚔️ 闯关</button>';
+  html+='<button class="btn btn-purple" onclick="showAchievements()">🏆 成就</button>';
   html+='</div>';
   if(!pet)html+='<button class="btn btn-orange" onclick="showAdoptionScreen()" style="margin-top:10px">🐰 领养兔兔</button>';
   html+='</div>';
@@ -1089,10 +1299,13 @@ function checkLevelUp(who){
   if(who==='bunny'&&happiness>=10){
     happiness=0;petLevel++;
     addFloatText(W/2,H/2,'🎉 兔兔升级! Lv.'+petLevel,'#e91e63');
+    SFX.play('levelup');
+    if(petLevel>=10)checkAchievement('maxPetLevel');
   }
   if(who==='lamb'&&lambHappiness>=10){
     lambHappiness=0;lambLevel++;
     addFloatText(W/2,H/2,'🎉 小羊升级! Lv.'+lambLevel,'#e91e63');
+    SFX.play('levelup');
   }
 }
 
@@ -1147,6 +1360,11 @@ function unlockTrap(key){
   if(xp<td.unlockXP)return;
   xp-=td.unlockXP;
   unlockedTraps.push(key);
+  // Check allTraps achievement
+  var allShopTraps=['bow','bomb','ice','sling','net','fakeCarrot'];
+  var allUnlocked=true;
+  for(var i=0;i<allShopTraps.length;i++){if(unlockedTraps.indexOf(allShopTraps[i])<0){allUnlocked=false;break;}}
+  if(allUnlocked)checkAchievement('allTraps');
   saveSave();showShop();
 }
 
@@ -1178,9 +1396,13 @@ function startBattle(level){
   waveTimer=0;
   selectedTrap=null;
   castleHP=100;
+  trapsPlacedThisBattle=0;
+  comboKills=[];
+  waveStartTime=0;
   coins=inventory.coins||0;
-  coins+=50;// start coins per level
+  coins+=50+battleLevel*10;// more coins on harder levels
   gameState='battle';
+  SFX.startBGM();
   showBattleUI();
 }
 
@@ -1189,6 +1411,7 @@ function showBattleUI(){
   html+='<div id="hud-coins">💰 '+coins+'</div></div>';
   html+='<div style="pointer-events:auto;position:absolute;top:40px;right:12px;display:flex;gap:6px">';
   html+='<div class="hud-btn" onclick="startWave()" id="startWaveBtn">'+(waveState==='prep'?'▶️ 开始':'战斗中...')+'</div>';
+  html+=' <div class="hud-btn" onclick="SFX.toggleMute()">🔊</div>';
   html+=' <div class="hud-btn" onclick="gameState=\'menu\';showMainMenu()">🏃 撤退</div></div>';
   // Trap bar
   html+='<div class="bottom-bar" id="trapBar">';
@@ -1229,18 +1452,28 @@ function startWave(){
   if(waveState!=='prep')return;
   waveState='spawning';
   battleWave++;
+  waveStartTime=Date.now();
+  waveAnnounceText='🌊 第'+battleWave+'波！';
+  waveAnnounceTimer=2000;
   spawnWave(battleWave);
 }
 
 function spawnWave(waveNum){
   var enemyTypes=['wolf','fox','bear','slime','splitter'];
   var count,delay;
-  if(waveNum===1){
-    count=5+battleLevel;
-    delay=1200;
+  // Difficulty curve
+  if(battleLevel<=3){
+    count=waveNum===1?(3+battleLevel):(5+battleLevel);
+    delay=waveNum===1?1500:1200;
+  }else if(battleLevel<=7){
+    count=waveNum===1?(4+battleLevel):(6+battleLevel);
+    delay=waveNum===1?1200:1000;
+  }else if(battleLevel<=12){
+    count=waveNum===1?Math.floor(5+battleLevel*1.5):Math.floor(7+battleLevel*1.5);
+    delay=waveNum===1?1000:800;
   }else{
-    count=8+battleLevel*2;
-    delay=800;
+    count=waveNum===1?(6+battleLevel*2):(8+battleLevel*2);
+    delay=waveNum===1?800:700;
   }
   
   var spawnQueue=[];
@@ -1248,14 +1481,18 @@ function spawnWave(waveNum){
     var etype;
     if(waveNum===2&&battleLevel>=3&&i===count-1){
       etype='boss';
+    }else if(battleLevel>=13){
+      // Force mixed types on hard levels
+      etype=enemyTypes[i%enemyTypes.length];
     }else{
       etype=enemyTypes[Math.floor(Math.random()*Math.min(enemyTypes.length,2+Math.floor(battleLevel/3)))];
     }
     spawnQueue.push({type:etype,delay:i*delay});
   }
   
-  var hpScale=1+battleLevel*0.15;
-  var spdScale=1+battleLevel*0.05;
+  // Tuned HP/speed scaling
+  var hpScale=battleLevel<=3?(1+battleLevel*0.05):(1+battleLevel*0.12);
+  var spdScale=battleLevel<=7?(1+battleLevel*0.03):(1+battleLevel*0.05);
   
   for(var j=0;j<spawnQueue.length;j++){
     (function(sq){
@@ -1301,6 +1538,13 @@ function getDmgBonus(){
 
 function updateBattle(dt){
   if(gameState!=='battle')return;
+  
+  // Update bunny mood based on castle HP (only if not in temporary mood)
+  if(bunnyMoodTimer<=0){
+    if(castleHP>80)bunnyMood='happy';
+    else if(castleHP>40)bunnyMood='focused';
+    else bunnyMood='worried';
+  }
   
   var dmgBonus=getDmgBonus();
   
@@ -1356,6 +1600,8 @@ function updateBattle(dt){
     }else{
       // Reached top! Damage castle
       castleHP-=e.atk;
+      screenShakeTimer=200;screenShakeIntensity=6;
+      bunnyMood='sad';bunnyMoodTimer=1000;
       e.alive=false;
       if(castleHP<=0){
         gameOver(false);return;
@@ -1383,6 +1629,7 @@ function updateBattle(dt){
         var dmg=(tdef.dmg||0)*dmgBonus;
         if(tdef.area){
           // Area damage
+          SFX.play('explode');
           for(var n=0;n<battleEnemies.length;n++){
             var ae=battleEnemies[n];
             if(!ae.alive)continue;
@@ -1394,6 +1641,7 @@ function updateBattle(dt){
           }
         }else if(tdef.freeze){
           closest.frozen=tdef.freeze;
+          SFX.play('freeze');
         }else if(tdef.catch){
           // Net: catch nearby enemies
           var caught=0;
@@ -1452,7 +1700,33 @@ function startTrapAttack(trap,enemy,dmgBonus){
 
 function killEnemy(e){
   e.alive=false;
+  SFX.play('kill');
   coins+=e.coins;xp+=e.xp;
+  totalCoinsEarned+=e.coins;
+  totalKills++;
+  // Combo system
+  comboTimer=2000;comboCount++;
+  if(comboCount>=2){
+    addFloatText(e.x,e.y-20,'x'+comboCount+'! 🔥','#ffd700');
+    coins+=comboCount*2; // bonus coins
+  }
+  // Coin fly animation
+  addFloatText(e.x+15,e.y,'💰+'+e.coins,'#ffeb3b');
+  // More particles (8-12)
+  addSparkles(e.x,e.y,8+Math.floor(Math.random()*5));
+  // Bunny mood
+  bunnyMood='angry';bunnyMoodTimer=800;
+  // Achievement checks
+  checkAchievement('firstBlood');
+  if(e.type==='boss')checkAchievement('bossSlayer');
+  // Combo tracking for achievements
+  var now=Date.now();
+  comboKills.push(now);
+  comboKills=comboKills.filter(function(t){return now-t<2000;});
+  if(comboKills.length>=3)checkAchievement('combo3');
+  if(comboKills.length>=5)checkAchievement('combo5');
+  // Rich bunny
+  if(totalCoinsEarned>=500)checkAchievement('richBunny');
   // Splitter
   if(e.type==='splitter'&&!e.mini){
     for(var s=0;s<2;s++){
@@ -1473,6 +1747,17 @@ function gameOver(won){
   if(won){
     if(battleLevel>progress)progress=battleLevel;
     xp+=3;
+    // Victory celebration!
+    addSparkles(W/2,H/3,30);
+    addFloatText(W/2,H/4,'🎉🎊🐰🎊🎉','#ffd700');
+    // Achievement checks
+    if(castleHP>=100)checkAchievement('perfectDefense');
+    if(progress>=5)checkAchievement('level5');
+    if(progress>=10)checkAchievement('level10');
+    if(progress>=15)checkAchievement('level15');
+    if(placedTraps.length===0&&trapsPlacedThisBattle===0)checkAchievement('noTraps');
+    if(castleHP>0&&castleHP<10)checkAchievement('survivor');
+    if(waveStartTime>0&&(Date.now()-waveStartTime)<30000)checkAchievement('speedRun');
   }
   inventory.coins=coins;
   saveSave();
@@ -1494,11 +1779,25 @@ function handleBattleClick(cx,cy){
   for(var fi=0;fi<4;fi++){// Can't place on floor 5
     var fl=castle.floors[fi];
     if(cy>fl.y&&cy<fl.y+fl.h&&cx>fl.x&&cx<fl.x+fl.w){
+      // Anti-overlap: reject if too close to existing trap
+      var tooClose=false;
+      for(var ti=0;ti<placedTraps.length;ti++){
+        if(!placedTraps[ti].alive)continue;
+        var dx2=placedTraps[ti].x-cx,dy2=placedTraps[ti].y-(fl.y+fl.h*0.7);
+        if(Math.sqrt(dx2*dx2+dy2*dy2)<25){tooClose=true;break;}
+      }
+      if(tooClose){
+        addFloatText(cx,cy-10,'❌ 太近了!','#f44336');
+        return;
+      }
       coins-=td.cost;
+      trapsPlacedThisBattle++;
+      if(trapsPlacedThisBattle>=10)checkAchievement('trapMaster');
       placedTraps.push({
         type:selectedTrap,x:cx,y:fl.y+fl.h*0.7,
         hp:td.hp,maxHp:td.hp,atkTimer:0,alive:true
       });
+      addFloatText(cx,cy-10,'✅','#4caf50');
       updateBattleHUD();
       return;
     }
@@ -1563,9 +1862,32 @@ function gameLoop(time){
   lastTime=time;
   animFrame++;
   
+  // Update timers
+  if(screenShakeTimer>0)screenShakeTimer-=deltaTime;
+  if(bunnyMoodTimer>0){bunnyMoodTimer-=deltaTime;if(bunnyMoodTimer<=0)bunnyMood=castleHP>80?'happy':castleHP>40?'focused':'worried';}
+  if(comboTimer>0){comboTimer-=deltaTime;if(comboTimer<=0)comboCount=0;}
+  if(waveAnnounceTimer>0)waveAnnounceTimer-=deltaTime;
+  
   if(gameState==='battle'){
-    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    // Screen shake
+    if(screenShakeTimer>0){
+      var sx=(Math.random()-0.5)*screenShakeIntensity;
+      var sy=(Math.random()-0.5)*screenShakeIntensity;
+      ctx.translate(sx,sy);
+    }
+    ctx.clearRect(-10,-10,W+20,H+20);
     drawCastle();
+    // Trap range preview
+    if(selectedTrap&&mouseX>0){
+      var td=TRAP_DEFS[selectedTrap];
+      var rng=(td.rng||1.5)*30;
+      ctx.fillStyle='rgba(85,239,196,0.12)';
+      ctx.beginPath();ctx.arc(mouseX,mouseY,rng,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='rgba(85,239,196,0.3)';ctx.lineWidth=1;ctx.stroke();
+      // Trap icon at cursor
+      ctx.font='20px serif';ctx.textAlign='center';ctx.fillText(td.icon,mouseX,mouseY+6);
+    }
     // Draw placed traps
     for(var i=0;i<placedTraps.length;i++){
       if(placedTraps[i].alive)drawTrap(ctx,placedTraps[i]);
@@ -1575,13 +1897,21 @@ function gameLoop(time){
       if(battleEnemies[j].alive)drawEnemy(ctx,battleEnemies[j],animFrame*0.016);
     }
     drawEffects();
+    // Wave announcement
+    if(waveAnnounceTimer>0){
+      var alpha=waveAnnounceTimer>1500?Math.min(1,(2000-waveAnnounceTimer+1000)/500):waveAnnounceTimer/1500;
+      ctx.globalAlpha=alpha;
+      ctx.fillStyle='#fff';ctx.font='bold 36px "PingFang SC",sans-serif';ctx.textAlign='center';
+      ctx.shadowColor='rgba(255,107,157,0.8)';ctx.shadowBlur=20;
+      ctx.fillText(waveAnnounceText,W/2,H/2);
+      ctx.shadowBlur=0;ctx.globalAlpha=1;
+    }
+    ctx.restore();
     updateBattle(deltaTime);
     updateEffects(deltaTime);
   }else if(gameState==='home'){
-    // Redraw home canvas periodically
     if(animFrame%30===0)drawHomeCanvas();
     updateEffects(deltaTime);
-    // Draw sparkles on main canvas for home
     ctx.clearRect(0,0,W,H);
     drawEffects();
   }else{
@@ -1610,6 +1940,9 @@ canvas.addEventListener('touchstart',function(e){
     handleBattleClick(p.x,p.y);
   }
 },{passive:false});
+// Mouse/touch move for trap range preview
+canvas.addEventListener('mousemove',function(e){mouseX=e.clientX;mouseY=e.clientY;});
+canvas.addEventListener('touchmove',function(e){var t=e.touches[0];mouseX=t.clientX;mouseY=t.clientY;},{passive:true});
 
 // ============ INIT ============
 window.addEventListener('resize',resize);
@@ -1637,6 +1970,7 @@ window.unlockLamb=unlockLamb;
 window.selectTrap=selectTrap;
 window.startWave=startWave;
 window.renderHome=renderHome;
+window.showAchievements=showAchievements;
 </script>
 </body>
 </html>
