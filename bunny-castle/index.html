@@ -85,21 +85,21 @@ const weapons=[
 
 // Enemy types
 const enemyTypes={
-  caterpillar:{emoji:'🐛',hp:40,speed:0.8,reward:5,flying:false},
+  yu:{emoji:'👾',hp:50,speed:1.0,reward:5,flying:false},
   fox:{emoji:'🦊',hp:70,speed:1.5,reward:8,flying:false},
-  bear:{emoji:'🐻',hp:200,speed:0.6,reward:15,flying:false},
+  bibaGuai:{emoji:'👹',hp:350,speed:0.5,reward:25,flying:false,splits:true},
+  bibaSmall:{emoji:'👺',hp:30,speed:1.8,reward:3,flying:false},
   eagle:{emoji:'🦅',hp:60,speed:1.0,reward:7,flying:true},
-  wolf:{emoji:'🐺',hp:180,speed:1.0,reward:20,flying:false}
 };
 
 // Waves
 const waves=[
-  {prep:30,spawns:[{path:'red',type:'caterpillar',count:5,interval:40}]},
-  {prep:20,spawns:[{path:'blue',type:'caterpillar',count:5,interval:40}]},
-  {prep:20,spawns:[{path:'red',type:'caterpillar',count:3,interval:40},{path:'blue',type:'caterpillar',count:3,interval:40}]},
-  {prep:15,spawns:[{path:'red',type:'fox',count:2,interval:50},{path:'blue',type:'caterpillar',count:3,interval:40}]},
-  {prep:15,spawns:[{path:'red',type:'caterpillar',count:3,interval:40},{path:'blue',type:'fox',count:2,interval:50}]},
-  {prep:10,spawns:[{path:'red',type:'bear',count:1,interval:60},{path:'red',type:'caterpillar',count:3,interval:35},{path:'blue',type:'bear',count:1,interval:60},{path:'blue',type:'caterpillar',count:3,interval:35}]}
+  {prep:30,spawns:[{path:'red',type:'yu',count:5,interval:40}]},
+  {prep:20,spawns:[{path:'blue',type:'yu',count:5,interval:40}]},
+  {prep:20,spawns:[{path:'red',type:'yu',count:3,interval:40},{path:'blue',type:'yu',count:3,interval:40}]},
+  {prep:15,spawns:[{path:'red',type:'fox',count:2,interval:50},{path:'blue',type:'yu',count:4,interval:40}]},
+  {prep:15,spawns:[{path:'red',type:'yu',count:3,interval:40},{path:'blue',type:'fox',count:2,interval:50}]},
+  {prep:10,spawns:[{path:'red',type:'bibaGuai',count:1,interval:60},{path:'red',type:'yu',count:3,interval:35},{path:'blue',type:'bibaGuai',count:1,interval:60},{path:'blue',type:'yu',count:3,interval:35}]}
 ];
 
 let spawnQueues=[];
@@ -151,6 +151,7 @@ function spawnEnemy(pathName,typeName){
   });
 }
 
+function killEnemy(e){e.dead=true;e.deathTimer=20;gold+=e.reward;if(enemyTypes[e.type]&&enemyTypes[e.type].splits){var et2=enemyTypes.bibaSmall;for(var si=0;si<2;si++){enemies.push({path:e.path,pathName:e.pathName,type:'bibaSmall',hp:et2.hp,maxHp:et2.hp,speed:et2.speed,progress:e.progress+0.005*si,pathLen:e.pathLen,emoji:et2.emoji,flying:et2.flying,reward:et2.reward,slowed:0,confused:0,dead:false,reached:false,teleporting:0,teleportAlpha:1});}}}
 function startWave(){
   if(wave>=waves.length){state='won';return;}
   const w=waves[wave];
@@ -200,16 +201,16 @@ function updateWeapons(){
     if(w.type==='single'){
       target.hp-=w.damage;
       projectiles.push({x:s.x,y:s.y,tx:tpos.x,ty:tpos.y,timer:10,color:'#fff'});
-      if(target.hp<=0){target.dead=true;target.deathTimer=20;gold+=target.reward;}
+      if(target.hp<=0){killEnemy(target);}
     }else if(w.type==='slow'){
       target.slowed=180;target.hp-=w.damage;
       effects.push({x:tpos.x,y:tpos.y,timer:20,type:'ice'});
-      if(target.hp<=0){target.dead=true;target.deathTimer=20;gold+=target.reward;}
+      if(target.hp<=0){killEnemy(target);}
     }else if(w.type==='aoe'){
       for(const e2 of enemies){
         if(e2.dead||e2.reached)continue;
         const p2=getPathPos(e2.path,e2.progress);
-        if(dist(tpos,p2)<80){e2.hp-=w.damage;if(e2.hp<=0){e2.dead=true;e2.deathTimer=20;gold+=e2.reward;}}
+        if(dist(tpos,p2)<80){e2.hp-=w.damage;if(e2.hp<=0){killEnemy(e2);}}
       }
       effects.push({x:tpos.x,y:tpos.y,timer:25,type:'explosion'});
     }else if(w.type==='zone'){
@@ -222,7 +223,7 @@ function updateWeapons(){
     }else if(w.type==='pushback'){
       if(!target.flying){target.progress=Math.max(0,target.progress-0.03);target.hp-=w.damage;}
       effects.push({x:tpos.x,y:tpos.y,timer:15,type:'spring'});
-      if(target.hp<=0){target.dead=true;target.deathTimer=20;gold+=target.reward;}
+      if(target.hp<=0){killEnemy(target);}
     }else if(w.type==='confuse'){
       target.confused=180;
       effects.push({x:tpos.x,y:tpos.y,timer:25,type:'flower'});
