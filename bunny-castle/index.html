@@ -431,14 +431,14 @@ function drawSlots(){
     let s=slots[i];
     if(s.tower){
       let w=WEAPONS.find(w=>w.id===s.tower.id);
-      ctx.font='22px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.font='34px serif';ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.fillText(w.name.split(' ')[0],s.x,s.y);
       // Range circle on hover
     }else{
-      ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=2;
+      ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=3;
       ctx.beginPath();
-      ctx.moveTo(s.x-8,s.y-8);ctx.lineTo(s.x+8,s.y+8);
-      ctx.moveTo(s.x+8,s.y-8);ctx.lineTo(s.x-8,s.y+8);
+      ctx.moveTo(s.x-12,s.y-12);ctx.lineTo(s.x+12,s.y+12);
+      ctx.moveTo(s.x+12,s.y-12);ctx.lineTo(s.x-12,s.y+12);
       ctx.stroke();
     }
   }
@@ -518,7 +518,7 @@ function drawWeaponMenu(){
   let s=slots[selectedSlot];
   let mx=s.x,my=s.y-30;
   // Background
-  let pw=280,ph=220;
+  let pw=320,ph=260;
   let px=Math.max(10,Math.min(mx-pw/2,W-pw-10));
   let py=Math.max(55,Math.min(my-ph,H-ph-10));
   
@@ -526,27 +526,27 @@ function drawWeaponMenu(){
   roundRect(ctx,px,py,pw,ph,10);ctx.fill();
   ctx.strokeStyle='#c8a060';ctx.lineWidth=2;roundRect(ctx,px,py,pw,ph,10);ctx.stroke();
   
-  ctx.font='bold 14px sans-serif';ctx.fillStyle='#ffe0a0';ctx.textAlign='center';
-  ctx.fillText('选择武器',px+pw/2,py+20);
+  ctx.font='bold 17px sans-serif';ctx.fillStyle='#ffe0a0';ctx.textAlign='center';
+  ctx.fillText('选择武器',px+pw/2,py+22);
   
   // Weapon buttons
   weaponBtns=[];
   for(let i=0;i<WEAPONS.length;i++){
     let w=WEAPONS[i];
-    let bx=px+10,by=py+30+i*30,bw=pw-20,bh=26;
+    let bx=px+10,by=py+35+i*36,bw=pw-20,bh=32;
     let canAfford=gold>=w.cost;
     ctx.fillStyle=canAfford?'rgba(255,220,150,0.2)':'rgba(100,60,30,0.3)';
     roundRect(ctx,bx,by,bw,bh,5);ctx.fill();
-    ctx.font='13px sans-serif';
+    ctx.font='16px sans-serif';
     ctx.fillStyle=canAfford?'#ffe8c0':'#886644';
     ctx.textAlign='left';
-    ctx.fillText(w.name,bx+8,by+17);
+    ctx.fillText(w.name,bx+8,by+21);
     ctx.textAlign='right';
-    ctx.fillText(w.cost+'💰',bx+bw-8,by+17);
+    ctx.fillText(w.cost+'💰',bx+bw-8,by+21);
     weaponBtns.push({x:bx,y:by,w:bw,h:bh,idx:i,canAfford});
   }
   // Close btn
-  ctx.font='13px sans-serif';ctx.fillStyle='#ff8888';ctx.textAlign='center';
+  ctx.font='16px sans-serif';ctx.fillStyle='#ff8888';ctx.textAlign='center';
   ctx.fillText('✕ 关闭',px+pw/2,py+ph-10);
   closeBtnRect={x:px+pw/2-40,y:py+ph-25,w:80,h:20};
 }
