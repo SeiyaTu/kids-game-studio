@@ -386,9 +386,73 @@ function render(){
       continue;
     }
     ctx.globalAlpha=e.teleporting>0?Math.abs(e.teleportAlpha):1;
-    // Enemy emoji
-    ctx.font='44px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText(e.emoji,pos.x,pos.y);
+    ctx.save();
+    // Custom drawn enemies
+    if(e.type==='yu'){
+      // 淤 - 烂泥怪/史莱姆，不规则，软趴趴
+      const sz=22,t=tick*0.06;
+      ctx.fillStyle='#7a6b3a';
+      ctx.beginPath();
+      ctx.moveTo(pos.x-sz+Math.sin(t)*4,pos.y+sz*0.3);
+      ctx.quadraticCurveTo(pos.x-sz*0.8,pos.y-sz*0.6+Math.sin(t+1)*3,pos.x-sz*0.2,pos.y-sz*0.8);
+      ctx.quadraticCurveTo(pos.x+sz*0.1,pos.y-sz+Math.cos(t)*3,pos.x+sz*0.5,pos.y-sz*0.6);
+      ctx.quadraticCurveTo(pos.x+sz+Math.sin(t+2)*4,pos.y-sz*0.2,pos.x+sz*0.9,pos.y+sz*0.3);
+      ctx.quadraticCurveTo(pos.x+sz*0.3,pos.y+sz*0.5+Math.sin(t)*2,pos.x-sz+Math.sin(t)*4,pos.y+sz*0.3);
+      ctx.fill();
+      // Darker spots
+      ctx.fillStyle='#5a4b2a';
+      ctx.beginPath();ctx.arc(pos.x-6,pos.y-2,5,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(pos.x+8,pos.y+4,4,0,Math.PI*2);ctx.fill();
+      // Droopy eyes
+      ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.ellipse(pos.x-8,pos.y-10,5,6,0,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(pos.x+8,pos.y-8,5,6,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#222';
+      ctx.beginPath();ctx.arc(pos.x-7,pos.y-8,2.5,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(pos.x+9,pos.y-6,2.5,0,Math.PI*2);ctx.fill();
+      // Drooling mouth
+      ctx.strokeStyle='#5a4b2a';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(pos.x+2,pos.y+2,6,0.2,Math.PI-0.2);ctx.stroke();
+    }else if(e.type==='bibaGuai'){
+      // 逼扒怪 - 方块组成，一块一块像积木，很硬
+      const bs=8;
+      const blocks=[[-2,-3],[- 1,-3],[0,-3],[1,-3],[-2,-2],[-1,-2],[0,-2],[1,-2],[2,-2],[-3,-1],[-2,-1],[-1,-1],[0,-1],[1,-1],[2,-1],[-3,0],[-2,0],[-1,0],[0,0],[1,0],[2,0],[3,0],[-2,1],[-1,1],[0,1],[1,1],[2,1],[-3,2],[-2,2],[1,2],[2,2]];
+      for(const b of blocks){
+        const bx=pos.x+b[0]*bs-bs/2,by=pos.y+b[1]*bs-bs/2;
+        ctx.fillStyle=(b[0]+b[1])%2===0?'#8b5e3c':'#6d4830';
+        ctx.fillRect(bx,by,bs-1,bs-1);
+      }
+      // Angry eyes
+      ctx.fillStyle='#ff0';
+      ctx.fillRect(pos.x-14,pos.y-18,8,6);
+      ctx.fillRect(pos.x+6,pos.y-18,8,6);
+      ctx.fillStyle='#f00';
+      ctx.fillRect(pos.x-12,pos.y-16,4,4);
+      ctx.fillRect(pos.x+8,pos.y-16,4,4);
+      // Cracks
+      ctx.strokeStyle='#3a2510';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(pos.x-5,pos.y-8);ctx.lineTo(pos.x-2,pos.y+5);ctx.lineTo(pos.x+3,pos.y+2);ctx.stroke();
+    }else if(e.type==='bibaSmall'){
+      // 逼扒小怪 - 分裂后的小方块怪
+      const bs=5;
+      const blocks=[[-1,-2],[0,-2],[1,-2],[-2,-1],[-1,-1],[0,-1],[1,-1],[-1,0],[0,0],[1,0],[-2,1],[1,1]];
+      for(const b of blocks){
+        const bx=pos.x+b[0]*bs-bs/2,by=pos.y+b[1]*bs-bs/2;
+        ctx.fillStyle=(b[0]+b[1])%2===0?'#a07050':'#8b5e3c';
+        ctx.fillRect(bx,by,bs-1,bs-1);
+      }
+      ctx.fillStyle='#ff0';
+      ctx.fillRect(pos.x-6,pos.y-8,4,3);
+      ctx.fillRect(pos.x+2,pos.y-8,4,3);
+      ctx.fillStyle='#f00';
+      ctx.fillRect(pos.x-5,pos.y-7,2,2);
+      ctx.fillRect(pos.x+3,pos.y-7,2,2);
+    }else{
+      // Default: use emoji
+      ctx.font='44px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(e.emoji,pos.x,pos.y);
+    }
+    ctx.restore();
     // HP bar
     const hpPct=e.hp/e.maxHp;
     ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(pos.x-24,pos.y-34,48,7);
