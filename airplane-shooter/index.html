@@ -591,6 +591,64 @@ function drawEnemyHeli(x, y, time, flash) {
   ctx.restore();
 }
 
+// ============ SCORPION ENEMY ============
+function drawEnemyScorpion(x, y, time, flash) {
+  ctx.save(); ctx.translate(x, y);
+  const tailSway = Math.sin(time * 0.03) * 0.3;
+  const bodyColor = flash || '#5D1049';
+  const darkColor = flash || '#3E0A30';
+  // Legs (4 per side)
+  for (let i = 0; i < 4; i++) {
+    const lx = -18 + i * 10, ly = 4;
+    const wave = Math.sin(time * 0.08 + i) * 3;
+    ctx.beginPath(); ctx.moveTo(lx, ly);
+    ctx.lineTo(lx - 10, ly + 12 + wave);
+    ctx.strokeStyle = darkColor; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-lx, ly);
+    ctx.lineTo(-lx + 10, ly + 12 - wave);
+    ctx.strokeStyle = darkColor; ctx.lineWidth = 2.5; ctx.stroke();
+  }
+  // Body
+  ctx.beginPath(); ctx.ellipse(0, 2, 20, 14, 0, 0, Math.PI * 2);
+  ctx.fillStyle = bodyColor; ctx.fill();
+  ctx.strokeStyle = darkColor; ctx.lineWidth = 1.5; ctx.stroke();
+  // Head
+  ctx.beginPath(); ctx.ellipse(0, -14, 12, 9, 0, 0, Math.PI * 2);
+  ctx.fillStyle = bodyColor; ctx.fill();
+  ctx.strokeStyle = darkColor; ctx.lineWidth = 1.5; ctx.stroke();
+  // Pincers (left)
+  ctx.beginPath(); ctx.moveTo(-10, -16);
+  ctx.quadraticCurveTo(-24, -28, -18, -34);
+  ctx.quadraticCurveTo(-12, -38, -14, -30);
+  ctx.strokeStyle = flash || '#7B1FA2'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.stroke();
+  // Pincers (right)
+  ctx.beginPath(); ctx.moveTo(10, -16);
+  ctx.quadraticCurveTo(24, -28, 18, -34);
+  ctx.quadraticCurveTo(12, -38, 14, -30);
+  ctx.strokeStyle = flash || '#7B1FA2'; ctx.lineWidth = 3; ctx.stroke();
+  // Tail (segmented, curving over)
+  const segments = 5;
+  let tx = 0, ty = 8;
+  ctx.beginPath(); ctx.moveTo(tx, ty);
+  for (let i = 1; i <= segments; i++) {
+    const t = i / segments;
+    tx = Math.sin(tailSway + t * 1.5) * 8;
+    ty = 8 + t * 12 - t * t * 40;
+    ctx.lineTo(tx, ty);
+  }
+  ctx.strokeStyle = flash || '#8E24AA'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.stroke();
+  // Stinger
+  ctx.beginPath(); ctx.moveTo(tx, ty);
+  ctx.lineTo(tx + 2, ty - 7); ctx.lineTo(tx - 2, ty - 7); ctx.closePath();
+  ctx.fillStyle = flash || '#FF1744'; ctx.fill();
+  // Eyes (glowing red)
+  drawCircle(-5, -16, 3, flash || '#FF1744');
+  drawCircle(5, -16, 3, flash || '#FF1744');
+  drawCircle(-5, -16, 1.5, '#fff');
+  drawCircle(5, -16, 1.5, '#fff');
+  ctx.restore();
+}
+
 // ============ BOSS DRAWING ============
 function drawBoss0(x, y, time, enraged, flash) {
   ctx.save(); ctx.translate(x, y);
@@ -1354,6 +1412,8 @@ class Enemy {
       case 3: this.w = 44; this.h = 40; this.speed = (0.4+Math.random()*0.2)*sm; this.hp = Math.ceil(3*hm); this.maxHp = this.hp; this.score = 35;
         this.shootInterval = Math.max(16, Math.floor(90/cfg.enemyShootMult)); this.canShoot = true; this.bulletSpeed = bs;
         this.moveDir = Math.random() > 0.5 ? 1 : -1; break;
+      case 4: this.w = 55; this.h = 50; this.speed = (0.25+Math.random()*0.15)*sm; this.hp = Math.ceil(12*hm); this.maxHp = this.hp; this.score = 100;
+        this.shootInterval = 300; this.canShoot = true; this.bulletSpeed = bs + 0.3; break;
     }
   }
   update(enemyBullets, playerX) {
@@ -1370,6 +1430,11 @@ class Enemy {
           enemyBullets.push({x:this.x, y:this.y+this.h/2, vx:0, vy:spd, r:5});
           enemyBullets.push({x:this.x-8, y:this.y+this.h/2, vx:-0.8, vy:spd, r:4});
           enemyBullets.push({x:this.x+8, y:this.y+this.h/2, vx:0.8, vy:spd, r:4});
+        } else if (this.type === 4) {
+          for (let i = -1; i <= 1; i++) {
+            const a = Math.PI/2 + i * 0.3;
+            enemyBullets.push({x:this.x, y:this.y+this.h/2, vx:Math.cos(a)*spd*1.1, vy:Math.sin(a)*spd*1.1, r:6, boss:true});
+          }
         } else {
           enemyBullets.push({x:this.x, y:this.y+this.h/2, vx:dx/len*spd, vy:dy/len*spd, r:4});
         }
@@ -1383,6 +1448,7 @@ class Enemy {
       case 1: drawEnemyBig(this.x, this.y, time, flash); break;
       case 2: drawEnemyTank(this.x, this.y, time, flash); break;
       case 3: drawEnemyHeli(this.x, this.y, time, flash); break;
+      case 4: drawEnemyScorpion(this.x, this.y, time, flash); break;
     }
     if (this.maxHp > 1) {
       const bw = this.w + 8, bx = this.x - bw/2, by = this.y - this.h/2 - 10;
@@ -1469,7 +1535,7 @@ function getEnemyType(cfg) {
   const r = Math.random();
   if (cfg.level < cfg.heliMinLevel && cfg.level < cfg.bigPlaneMinLevel) return 0;
   if (cfg.level < cfg.tankMinLevel) return r < 0.5 ? 0 : r < 0.75 ? 1 : 3;
-  return r < 0.3 ? 0 : r < 0.5 ? 1 : r < 0.7 ? 2 : 3;
+  return r < 0.25 ? 0 : r < 0.45 ? 1 : r < 0.6 ? 2 : r < 0.85 ? 3 : 4;
 }
 
 // ============ COMBO ============
